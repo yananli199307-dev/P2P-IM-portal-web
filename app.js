@@ -252,8 +252,19 @@ async function applyContact(targetPortal, requesterName, requesterPortal, messag
 
 async function loadRequests() {
     try {
-        const requests = await apiRequest('/contact-requests/received');
-        state.requests = requests;
+        // 加载联系人请求
+        const contactRequests = await apiRequest('/contact-requests/received');
+        state.requests = contactRequests.map(r => ({...r, type: 'contact'}));
+        
+        // 加载群邀请
+        try {
+            const groupInvites = await apiRequest('/groups/invites');
+            const invites = groupInvites.map(i => ({...i, type: 'group'}));
+            state.requests = [...state.requests, ...invites];
+        } catch (e) {
+            console.log('加载群邀请失败:', e);
+        }
+        
         renderRequests();
         updateRequestBadge();
     } catch (error) {
@@ -286,26 +297,72 @@ async function rejectRequest(requestId) {
     }
 }
 
+async function acceptGroupInvite(inviteId) {
+    try {
+        await apiRequest(`/groups/invites/${inviteId}/accept`, {
+            method: 'POST'
+        });
+        showToast('已接受群邀请');
+        await loadRequests();
+        await loadGroups();
+    } catch (error) {
+        console.error('接受群邀请失败:', error);
+        showToast('接受失败: ' + error.message, 'error');
+    }
+}
+
+async function rejectGroupInvite(inviteId) {
+    try {
+        await apiRequest(`/groups/invites/${inviteId}/reject`, {
+            method: 'POST'
+        });
+        showToast('已拒绝群邀请');
+        await loadRequests();
+    } catch (error) {
+        console.error('拒绝群邀请失败:', error);
+    }
+}
+
 function renderRequests() {
     if (state.requests.length === 0) {
-        elements.requestsList.innerHTML = '<div class="empty">暂无新的联系人请求</div>';
+        elements.requestsList.innerHTML = '<div class="empty">暂无新的请求</div>';
         return;
     }
     
-    elements.requestsList.innerHTML = state.requests.map(req => `
-        <div class="request-item" data-id="${req.id}">
-            <div class="request-avatar">${req.requester_name[0].toUpperCase()}</div>
-            <div class="request-info">
-                <div class="request-name">${escapeHtml(req.requester_name)}</div>
-                <div class="request-portal">${escapeHtml(req.requester_portal)}</div>
-                ${req.message ? `<div class="request-message">${escapeHtml(req.message)}</div>` : ''}
-            </div>
-            <div class="request-actions">
-                <button class="btn btn-primary btn-small" onclick="window.approveRequest(${req.id})">批准</button>
-                <button class="btn btn-secondary btn-small" onclick="window.rejectRequest(${req.id})">拒绝</button>
-            </div>
-        </div>
-    `).join('');
+    elements.requestsList.innerHTML = state.requests.map(req => {
+        if (req.type === 'group') {
+            // 群邀请
+            return `
+                <div class="request-item" data-id="${req.id}" data-type="group">
+                    <div class="request-avatar">群</div>
+                    <div class="request-info">
+                        <div class="request-name">群邀请: ${escapeHtml(req.group_name)}</div>
+                        <div class="request-portal">来自: ${escapeHtml(req.inviter_portal)}</div>
+                    </div>
+                    <div class="request-actions">
+                        <button class="btn btn-primary btn-small" onclick="window.acceptGroupInvite(${req.id})">接受</button>
+                        <button class="btn btn-secondary btn-small" onclick="window.rejectGroupInvite(${req.id})">拒绝</button>
+                    </div>
+                </div>
+            `;
+        } else {
+            // 联系人请求
+            return `
+                <div class="request-item" data-id="${req.id}" data-type="contact">
+                    <div class="request-avatar">${req.requester_name[0].toUpperCase()}</div>
+                    <div class="request-info">
+                        <div class="request-name">${escapeHtml(req.requester_name)}</div>
+                        <div class="request-portal">${escapeHtml(req.requester_portal)}</div>
+                        ${req.message ? `<div class="request-message">${escapeHtml(req.message)}</div>` : ''}
+                    </div>
+                    <div class="request-actions">
+                        <button class="btn btn-primary btn-small" onclick="window.approveRequest(${req.id})">批准</button>
+                        <button class="btn btn-secondary btn-small" onclick="window.rejectRequest(${req.id})">拒绝</button>
+                    </div>
+                </div>
+            `;
+        }
+    }).join('');
 }
 
 function updateRequestBadge() {
@@ -687,6 +744,8 @@ function escapeHtml(text) {
 // 暴露给 HTML 调用的函数
 window.approveRequest = approveRequest;
 window.rejectRequest = rejectRequest;
+window.acceptGroupInvite = acceptGroupInvite;
+window.rejectGroupInvite = rejectGroupInvite;
 
 // ========== 事件绑定 ==========
 
