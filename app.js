@@ -455,8 +455,12 @@ function handleWebSocketMessage(message) {
     if (message.type === 'new_message') {
         const data = message.data;
         if (data && data.contact_id === state.selectedContact?.id) {
-            state.messages.push(data);
-            renderMessages();
+            // 检查是否已存在，避免重复添加
+            const exists = state.messages.some(m => m.id === data.id);
+            if (!exists) {
+                state.messages.push(data);
+                renderMessages();
+            }
         }
     }
 }
