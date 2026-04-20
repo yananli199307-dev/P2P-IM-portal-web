@@ -297,6 +297,21 @@ input:focus {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+/* 未读消息标记 */
+.unread-badge {
+    background: var(--error);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+}
+
 .contact-avatar {
     width: 48px;
     height: 48px;

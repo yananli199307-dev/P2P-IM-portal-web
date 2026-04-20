@@ -314,8 +314,87 @@ async function loadContacts() {
         const contacts = await apiRequest('/contacts');
         state.contacts = contacts;
         renderContacts();
+        // 加载未读消息后更新联系人显示
+        await loadUnreadMessages();
     } catch (error) {
         console.error('加载联系人失败:', error);
+    }
+}
+
+// 未读消息状态
+state.unreadCounts = {};
+
+async function loadUnreadMessages() {
+    """加载所有未读消息"""
+    try {
+        const unreadMessages = await apiRequest('/messages/unread');
+        // 按联系人统计未读数量
+        state.unreadCounts = {};
+        unreadMessages.forEach(msg => {
+            if (!state.unreadCounts[msg.contact_id]) {
+                state.unreadCounts[msg.contact_id] = 0;
+            }
+            state.unreadCounts[msg.contact_id]++;
+        });
+        // 更新联系人列表显示未读标记
+        updateContactUnreadBadges();
+        // 更新页面标题显示总未读数
+        updateTotalUnreadCount();
+    } catch (error) {
+        console.error('加载未读消息失败:', error);
+    }
+}
+
+function updateContactUnreadBadges() {
+    """更新联系人列表的未读标记"""
+    document.querySelectorAll('.contact-item').forEach(item => {
+        const contactId = parseInt(item.dataset.id);
+        const unreadCount = state.unreadCounts[contactId] || 0;
+        
+        // 移除旧的未读标记
+        const oldBadge = item.querySelector('.unread-badge');
+        if (oldBadge) {
+            oldBadge.remove();
+        }
+        
+        // 添加新的未读标记
+        if (unreadCount > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'unread-badge';
+            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            item.appendChild(badge);
+        }
+    });
+}
+
+function updateTotalUnreadCount() {
+    """更新页面标题显示总未读数"""
+    const totalUnread = Object.values(state.unreadCounts).reduce((sum, count) => sum + count, 0);
+    if (totalUnread > 0) {
+        document.title = `(${totalUnread}) P2P-IM Portal`;
+    } else {
+        document.title = 'P2P-IM Portal';
+    }
+}
+
+async function markMessagesAsRead(contactId) {
+    """标记联系人的所有消息为已读"""
+    try {
+        // 获取该联系人的未读消息
+        const unreadMessages = await apiRequest('/messages/unread');
+        const contactUnreadMessages = unreadMessages.filter(msg => msg.contact_id === contactId);
+        
+        // 逐个标记为已读
+        for (const msg of contactUnreadMessages) {
+            await apiRequest(`/messages/${msg.id}/read`, { method: 'POST' });
+        }
+        
+        // 更新本地未读计数
+        delete state.unreadCounts[contactId];
+        updateContactUnreadBadges();
+        updateTotalUnreadCount();
+    } catch (error) {
+        console.error('标记已读失败:', error);
     }
 }
 
@@ -348,13 +427,15 @@ function renderContacts() {
 
 // ========== 聊天 ==========
 
-function openChat(contact) {
+async function openChat(contact) {
     state.selectedContact = contact;
     elements.chatContactName.textContent = contact.display_name;
     elements.chatPanel.classList.remove('hidden');
     elements.chatMessages.innerHTML = '<div class="empty">暂无消息</div>';
     elements.messageInput.focus();
-    loadMessages(contact.id);
+    await loadMessages(contact.id);
+    // 标记消息为已读
+    await markMessagesAsRead(contact.id);
 }
 
 function closeChat() {
@@ -460,7 +541,21 @@ function handleWebSocketMessage(message) {
             if (!exists) {
                 state.messages.push(data);
                 renderMessages();
+                // 如果正在聊天，自动标记为已读
+                if (!data.is_from_owner) {
+                    markMessagesAsRead(data.contact_id);
+                }
             }
+        } else if (data && !data.is_from_owner) {
+            // 收到其他联系人的新消息，更新未读计数
+            if (!state.unreadCounts[data.contact_id]) {
+                state.unreadCounts[data.contact_id] = 0;
+            }
+            state.unreadCounts[data.contact_id]++;
+            updateContactUnreadBadges();
+            updateTotalUnreadCount();
+            // 显示通知
+            showToast(`收到新消息`);
         }
     }
 }
