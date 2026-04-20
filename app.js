@@ -816,6 +816,15 @@ function bindEvents() {
     // 群组
     document.getElementById('create-group-btn')?.addEventListener('click', showCreateGroupModal);
     document.getElementById('create-group-form')?.addEventListener('submit', handleCreateGroup);
+    document.getElementById('close-group-chat')?.addEventListener('click', closeGroupChat);
+    document.getElementById('send-group-btn')?.addEventListener('click', () => {
+        sendGroupMessage(document.getElementById('group-message-input').value);
+    });
+    document.getElementById('group-message-input')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendGroupMessage(document.getElementById('group-message-input').value);
+        }
+    });
 }
 
 // ========== 群组功能 ==========
@@ -880,6 +889,7 @@ function showCreateGroupModal() {
 
 async function handleCreateGroup(e) {
     e.preventDefault();
+    e.stopPropagation();
     
     const name = document.getElementById('group-name').value;
     const description = document.getElementById('group-description').value;
@@ -889,6 +899,7 @@ async function handleCreateGroup(e) {
     const memberIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
     
     console.log('Creating group:', { name, description, member_ids: memberIds });
+    console.log('Token:', state.token);
     
     try {
         const result = await apiRequest('/groups', {
@@ -909,8 +920,73 @@ async function handleCreateGroup(e) {
 
 function openGroupChat(group) {
     state.selectedGroup = group;
-    // TODO: 实现群聊天界面
-    showToast('群聊天功能开发中...');
+    document.getElementById('group-chat-name').textContent = group.name;
+    document.getElementById('group-chat-panel').classList.remove('hidden');
+    loadGroupMessages(group.id);
+}
+
+function closeGroupChat() {
+    document.getElementById('group-chat-panel').classList.add('hidden');
+    state.selectedGroup = null;
+}
+
+async function loadGroupMessages(groupId) {
+    try {
+        const messages = await apiRequest(`/messages/group/${groupId}`);
+        const container = document.getElementById('group-chat-messages');
+        
+        if (messages.length === 0) {
+            container.innerHTML = '<div class="empty">暂无消息</div>';
+            return;
+        }
+        
+        // 按时间排序
+        const sortedMessages = [...messages].sort((a, b) => {
+            return new Date(a.created_at) - new Date(b.created_at);
+        });
+        
+        container.innerHTML = sortedMessages.map(msg => {
+            const isMe = msg.is_from_owner;
+            const time = new Date(msg.created_at).toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const senderName = msg.sender_name || (isMe ? '我' : '成员');
+            
+            return `
+                <div class="message ${isMe ? 'sent' : 'received'}">
+                    <div class="message-sender" style="font-size: 12px; color: #666; margin-bottom: 4px;">${senderName}</div>
+                    <div>${escapeHtml(msg.content)}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+        }).join('');
+        
+        container.scrollTop = container.scrollHeight;
+    } catch (error) {
+        console.error('加载群消息失败:', error);
+    }
+}
+
+async function sendGroupMessage(content) {
+    if (!state.selectedGroup || !content.trim()) return;
+    
+    try {
+        await apiRequest('/messages/group', {
+            method: 'POST',
+            body: {
+                group_id: state.selectedGroup.id,
+                content: content.trim(),
+                message_type: 'text'
+            }
+        });
+        
+        document.getElementById('group-message-input').value = '';
+        loadGroupMessages(state.selectedGroup.id);
+    } catch (error) {
+        console.error('发送群消息失败:', error);
+        showToast('发送失败: ' + error.message, 'error');
+    }
 }
 
 // ========== 初始化 ==========

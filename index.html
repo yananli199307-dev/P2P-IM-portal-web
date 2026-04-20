@@ -256,6 +256,31 @@
                     </button>
                 </div>
             </div>
+            
+            <!-- 群聊面板 -->
+            <div id="group-chat-panel" class="chat-panel hidden">
+                <div class="chat-header">
+                    <button id="close-group-chat" class="btn-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                        </svg>
+                    </button>
+                    <div class="chat-title">
+                        <h3 id="group-chat-name">群组</h3>
+                    </div>
+                </div>
+                <div id="group-chat-messages" class="chat-messages">
+                    <div class="empty">暂无消息</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="group-message-input" placeholder="输入消息...">
+                    <button id="send-group-btn" class="btn btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
