@@ -817,6 +817,8 @@ function bindEvents() {
     document.getElementById('create-group-btn')?.addEventListener('click', showCreateGroupModal);
     document.getElementById('create-group-form')?.addEventListener('submit', handleCreateGroup);
     document.getElementById('close-group-chat')?.addEventListener('click', closeGroupChat);
+    document.getElementById('invite-member-btn')?.addEventListener('click', showInviteMemberModal);
+    document.getElementById('invite-member-form')?.addEventListener('submit', handleInviteMember);
     document.getElementById('send-group-btn')?.addEventListener('click', () => {
         sendGroupMessage(document.getElementById('group-message-input').value);
     });
@@ -986,6 +988,77 @@ async function sendGroupMessage(content) {
     } catch (error) {
         console.error('发送群消息失败:', error);
         showToast('发送失败: ' + error.message, 'error');
+    }
+}
+
+// ========== 邀请成员 ==========
+
+function showInviteMemberModal() {
+    if (!state.selectedGroup) {
+        showToast('请先选择群组', 'error');
+        return;
+    }
+    
+    const modal = document.getElementById('invite-member-modal');
+    const membersSelect = document.getElementById('invite-members-select');
+    
+    // 渲染联系人选择（排除已在群中的）
+    const availableContacts = state.contacts.filter(c => {
+        // 简化处理，显示所有联系人
+        return true;
+    });
+    
+    if (availableContacts.length === 0) {
+        membersSelect.innerHTML = '<div class="empty">暂无可用联系人</div>';
+    } else {
+        membersSelect.innerHTML = availableContacts.map(contact => `
+            <label class="member-checkbox">
+                <input type="checkbox" value="${contact.id}" data-portal="${contact.portal_url}">
+                <span>${escapeHtml(contact.display_name)} (${contact.portal_url})</span>
+            </label>
+        `).join('');
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+async function handleInviteMember(e) {
+    e.preventDefault();
+    
+    if (!state.selectedGroup) {
+        showToast('请先选择群组', 'error');
+        return;
+    }
+    
+    // 获取选中的联系人
+    const checkboxes = document.querySelectorAll('#invite-members-select input:checked');
+    const contactIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    if (contactIds.length === 0) {
+        showToast('请选择要邀请的联系人', 'error');
+        return;
+    }
+    
+    console.log('Inviting members:', { group_id: state.selectedGroup.id, contact_ids: contactIds });
+    
+    try {
+        // 逐个邀请
+        for (const contactId of contactIds) {
+            await apiRequest('/groups/invite', {
+                method: 'POST',
+                body: {
+                    group_id: state.selectedGroup.id,
+                    contact_id: contactId
+                }
+            });
+        }
+        
+        document.getElementById('invite-member-modal').classList.add('hidden');
+        document.getElementById('invite-member-form').reset();
+        showToast('邀请已发送');
+    } catch (error) {
+        console.error('邀请失败:', error);
+        showToast('邀请失败: ' + error.message, 'error');
     }
 }
 

@@ -268,6 +268,9 @@
                     <div class="chat-title">
                         <h3 id="group-chat-name">群组</h3>
                     </div>
+                    <button id="invite-member-btn" class="btn btn-small btn-secondary">
+                        +邀请
+                    </button>
                 </div>
                 <div id="group-chat-messages" class="chat-messages">
                     <div class="empty">暂无消息</div>
@@ -337,6 +340,28 @@
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary modal-cancel">取消</button>
                     <button type="submit" class="btn btn-primary">创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 邀请成员弹窗 -->
+    <div id="invite-member-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>邀请成员</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="invite-member-form">
+                <div class="input-group">
+                    <label>选择联系人邀请</label>
+                    <div id="invite-members-select" class="members-select">
+                        <!-- 联系人列表将在这里渲染 -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">取消</button>
+                    <button type="submit" class="btn btn-primary">发送邀请</button>
                 </div>
             </form>
         </div>
