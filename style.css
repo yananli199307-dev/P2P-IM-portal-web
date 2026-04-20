@@ -740,3 +740,31 @@ input:checked + .slider:before {
         display: none;
     }
 }
+
+/* 成员选择 */
+.members-select {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.member-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.member-checkbox:hover {
+    background: var(--bg);
+}
+
+.member-checkbox input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}

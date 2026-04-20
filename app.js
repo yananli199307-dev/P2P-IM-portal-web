@@ -83,6 +83,7 @@ const elements = {
     // 导航
     navItems: document.querySelectorAll('.nav-item'),
     contactsPage: document.getElementById('contacts-page'),
+    groupsPage: document.getElementById('groups-page'),
     requestsPage: document.getElementById('requests-page'),
     settingsPage: document.getElementById('settings-page'),
     logoutSetting: document.getElementById('logout-setting'),
@@ -634,11 +635,15 @@ function showMainPage() {
 
 function showPage(pageName) {
     elements.contactsPage.classList.add('hidden');
+    elements.groupsPage.classList.add('hidden');
     elements.requestsPage.classList.add('hidden');
     elements.settingsPage.classList.add('hidden');
     
     if (pageName === 'contacts') {
         elements.contactsPage.classList.remove('hidden');
+    } else if (pageName === 'groups') {
+        elements.groupsPage.classList.remove('hidden');
+        loadGroups();
     } else if (pageName === 'requests') {
         elements.requestsPage.classList.remove('hidden');
     } else if (pageName === 'settings') {
@@ -807,6 +812,101 @@ function bindEvents() {
             sendMessage(elements.messageInput.value);
         }
     });
+    
+    // 群组
+    document.getElementById('create-group-btn')?.addEventListener('click', showCreateGroupModal);
+    document.getElementById('create-group-form')?.addEventListener('submit', handleCreateGroup);
+}
+
+// ========== 群组功能 ==========
+
+state.groups = [];
+state.selectedGroup = null;
+
+async function loadGroups() {
+    try {
+        const groups = await apiRequest('/groups');
+        state.groups = groups;
+        renderGroups();
+    } catch (error) {
+        console.error('加载群组失败:', error);
+    }
+}
+
+function renderGroups() {
+    const container = document.getElementById('groups-list');
+    if (!container) return;
+    
+    if (state.groups.length === 0) {
+        container.innerHTML = '<div class="empty">暂无群组<br>点击上方按钮创建</div>';
+        return;
+    }
+    
+    container.innerHTML = state.groups.map(group => `
+        <div class="contact-item" data-id="${group.id}">
+            <div class="contact-avatar">${group.name[0].toUpperCase()}</div>
+            <div class="contact-info">
+                <div class="contact-name">${escapeHtml(group.name)}</div>
+                <div class="contact-url">${group.member_count || 0} 人</div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.querySelectorAll('.contact-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const id = parseInt(item.dataset.id);
+            const group = state.groups.find(g => g.id === id);
+            if (group) {
+                openGroupChat(group);
+            }
+        });
+    });
+}
+
+function showCreateGroupModal() {
+    const modal = document.getElementById('create-group-modal');
+    const membersSelect = document.getElementById('group-members-select');
+    
+    // 渲染联系人选择
+    membersSelect.innerHTML = state.contacts.map(contact => `
+        <label class="member-checkbox">
+            <input type="checkbox" value="${contact.id}">
+            <span>${escapeHtml(contact.display_name)}</span>
+        </label>
+    `).join('');
+    
+    modal.classList.remove('hidden');
+}
+
+async function handleCreateGroup(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('group-name').value;
+    const description = document.getElementById('group-description').value;
+    
+    // 获取选中的成员
+    const checkboxes = document.querySelectorAll('#group-members-select input:checked');
+    const memberIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    try {
+        await apiRequest('/groups', {
+            method: 'POST',
+            body: { name, description, member_ids: memberIds }
+        });
+        
+        document.getElementById('create-group-modal').classList.add('hidden');
+        document.getElementById('create-group-form').reset();
+        showToast('群组创建成功');
+        loadGroups();
+    } catch (error) {
+        showToast('创建失败: ' + error.message, 'error');
+    }
+}
+
+function openGroupChat(group) {
+    state.selectedGroup = group;
+    // TODO: 实现群聊天界面
+    showToast('群聊天功能开发中...');
 }
 
 // ========== 初始化 ==========
