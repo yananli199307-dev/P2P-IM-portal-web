@@ -496,13 +496,10 @@ function renderMessages() {
     
     elements.chatMessages.innerHTML = sortedMessages.map(msg => {
         const isSent = msg.is_from_owner;
-        // 转换为北京时间（UTC+8）
-        const date = new Date(msg.created_at);
-        const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
-        const time = beijingTime.toLocaleTimeString('zh-CN', {
+        // 后端已存储北京时间，直接显示
+        const time = new Date(msg.created_at).toLocaleTimeString('zh-CN', {
             hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'UTC'
+            minute: '2-digit'
         });
         
         return `
