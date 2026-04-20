@@ -847,7 +847,7 @@ function renderGroups() {
             <div class="contact-avatar">${group.name[0].toUpperCase()}</div>
             <div class="contact-info">
                 <div class="contact-name">${escapeHtml(group.name)}</div>
-                <div class="contact-url">${group.member_count || 0} 人</div>
+                <div class="contact-url">${group.members ? group.members.length : 0} 人</div>
             </div>
         </div>
     `).join('');
@@ -888,17 +888,21 @@ async function handleCreateGroup(e) {
     const checkboxes = document.querySelectorAll('#group-members-select input:checked');
     const memberIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
     
+    console.log('Creating group:', { name, description, member_ids: memberIds });
+    
     try {
-        await apiRequest('/groups', {
+        const result = await apiRequest('/groups', {
             method: 'POST',
             body: { name, description, member_ids: memberIds }
         });
+        console.log('Group created:', result);
         
         document.getElementById('create-group-modal').classList.add('hidden');
         document.getElementById('create-group-form').reset();
         showToast('群组创建成功');
         loadGroups();
     } catch (error) {
+        console.error('Create group error:', error);
         showToast('创建失败: ' + error.message, 'error');
     }
 }
