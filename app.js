@@ -199,7 +199,7 @@ async function changePassword(oldPassword, newPassword) {
 // ========== 匿名申请 ==========
 
 function generateSharedKey() {
-    """生成共享密钥 - 申请方生成，双方使用"""
+    // 生成共享密钥 - 申请方生成，双方使用
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
     return 'shared_' + Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
