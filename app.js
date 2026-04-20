@@ -325,7 +325,7 @@ async function loadContacts() {
 state.unreadCounts = {};
 
 async function loadUnreadMessages() {
-    """加载所有未读消息"""
+    // 加载所有未读消息
     try {
         const unreadMessages = await apiRequest('/messages/unread');
         // 按联系人统计未读数量
@@ -346,7 +346,7 @@ async function loadUnreadMessages() {
 }
 
 function updateContactUnreadBadges() {
-    """更新联系人列表的未读标记"""
+    // 更新联系人列表的未读标记
     document.querySelectorAll('.contact-item').forEach(item => {
         const contactId = parseInt(item.dataset.id);
         const unreadCount = state.unreadCounts[contactId] || 0;
@@ -368,7 +368,7 @@ function updateContactUnreadBadges() {
 }
 
 function updateTotalUnreadCount() {
-    """更新页面标题显示总未读数"""
+    // 更新页面标题显示总未读数
     const totalUnread = Object.values(state.unreadCounts).reduce((sum, count) => sum + count, 0);
     if (totalUnread > 0) {
         document.title = `(${totalUnread}) P2P-IM Portal`;
@@ -378,7 +378,7 @@ function updateTotalUnreadCount() {
 }
 
 async function markMessagesAsRead(contactId) {
-    """标记联系人的所有消息为已读"""
+    // 标记联系人的所有消息为已读
     try {
         // 获取该联系人的未读消息
         const unreadMessages = await apiRequest('/messages/unread');
