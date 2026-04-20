@@ -1,6 +1,6 @@
-// API 配置
-const API_BASE_URL = 'https://agentp2p.cn/api';
-const WS_URL = 'wss://agentp2p.cn/ws';
+// API 配置 - 使用当前域名
+const API_BASE_URL = window.location.origin + '/api';
+const WS_URL = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
 
 // 状态管理
 const state = {
