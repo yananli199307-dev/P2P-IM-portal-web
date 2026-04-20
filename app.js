@@ -489,11 +489,20 @@ function renderMessages() {
         return;
     }
     
-    elements.chatMessages.innerHTML = state.messages.map(msg => {
+    // 按时间排序（旧的在上面，新的在下面）
+    const sortedMessages = [...state.messages].sort((a, b) => {
+        return new Date(a.created_at) - new Date(b.created_at);
+    });
+    
+    elements.chatMessages.innerHTML = sortedMessages.map(msg => {
         const isSent = msg.is_from_owner;
-        const time = new Date(msg.created_at).toLocaleTimeString('zh-CN', {
+        // 转换为北京时间（UTC+8）
+        const date = new Date(msg.created_at);
+        const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+        const time = beijingTime.toLocaleTimeString('zh-CN', {
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            timeZone: 'UTC'
         });
         
         return `
