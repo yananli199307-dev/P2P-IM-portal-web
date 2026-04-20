@@ -113,13 +113,19 @@ async function apiRequest(endpoint, options = {}) {
     
     try {
         const response = await fetch(url, config);
-        const data = await response.json();
         
         if (!response.ok) {
-            throw new Error(data.detail || '请求失败');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `请求失败: ${response.status}`);
         }
         
-        return data;
+        // 处理空响应
+        const text = await response.text();
+        if (!text) {
+            return null;
+        }
+        
+        return JSON.parse(text);
     } catch (error) {
         showToast(error.message, 'error');
         throw error;
@@ -330,12 +336,14 @@ async function loadUnreadMessages() {
         const unreadMessages = await apiRequest('/messages/unread');
         // 按联系人统计未读数量
         state.unreadCounts = {};
-        unreadMessages.forEach(msg => {
-            if (!state.unreadCounts[msg.contact_id]) {
-                state.unreadCounts[msg.contact_id] = 0;
-            }
-            state.unreadCounts[msg.contact_id]++;
-        });
+        if (unreadMessages && Array.isArray(unreadMessages)) {
+            unreadMessages.forEach(msg => {
+                if (!state.unreadCounts[msg.contact_id]) {
+                    state.unreadCounts[msg.contact_id] = 0;
+                }
+                state.unreadCounts[msg.contact_id]++;
+            });
+        }
         // 更新联系人列表显示未读标记
         updateContactUnreadBadges();
         // 更新页面标题显示总未读数
