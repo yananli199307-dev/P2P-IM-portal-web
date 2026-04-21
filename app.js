@@ -3,9 +3,18 @@ const API_BASE_URL = window.location.origin + '/api';
 const WS_URL = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
 
 // 状态管理
+let storedUser = null;
+try {
+    const userStr = localStorage.getItem('user');
+    storedUser = userStr ? JSON.parse(userStr) : null;
+} catch (e) {
+    console.error('解析用户数据失败:', e);
+    storedUser = null;
+}
+
 const state = {
     token: localStorage.getItem('token'),
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
+    user: storedUser,
     portalUrl: localStorage.getItem('portalUrl') || '',
     contacts: [],
     messages: [],
