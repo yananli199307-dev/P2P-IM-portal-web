@@ -108,7 +108,13 @@ input:focus {
 .btn-primary {
     background: var(--primary);
     color: white;
-    width: 100%;
+}
+
+.chat-input-area .btn-primary {
+    width: auto;
+    padding: 12px 16px;
+    min-width: 44px;
+    min-height: 44px;
 }
 
 .btn-primary:hover {
