@@ -125,8 +125,18 @@ async function apiRequest(endpoint, options = {}) {
         const response = await fetch(url, config);
         
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || `请求失败: ${response.status}`);
+            let errorDetail = `请求失败: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    errorDetail = typeof errorData.detail === 'string' 
+                        ? errorData.detail 
+                        : JSON.stringify(errorData.detail);
+                }
+            } catch (e) {
+                // ignore parse error
+            }
+            throw new Error(errorDetail);
         }
         
         // 处理空响应
