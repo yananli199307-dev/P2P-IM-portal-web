@@ -436,7 +436,7 @@ async function addContactByUrl() {
     
     try {
         // 发送添加联系人请求
-        const response = await apiRequest('/contacts/request', {
+        const response = await apiRequest('/contact-requests/apply', {
             method: 'POST',
             body: JSON.stringify({
                 target_portal: url,
