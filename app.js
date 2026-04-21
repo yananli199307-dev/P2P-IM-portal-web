@@ -987,6 +987,8 @@ function bindEvents() {
     document.getElementById('create-group-form')?.addEventListener('submit', handleCreateGroup);
     document.getElementById('close-group-chat')?.addEventListener('click', closeGroupChat);
     document.getElementById('invite-member-btn')?.addEventListener('click', showInviteMemberModal);
+    document.getElementById('show-group-members-btn')?.addEventListener('click', showGroupMembers);
+    document.getElementById('close-group-members-btn')?.addEventListener('click', hideGroupMembers);
     document.getElementById('invite-member-form')?.addEventListener('submit', handleInviteMember);
     document.getElementById('send-group-btn')?.addEventListener('click', () => {
         sendGroupMessage(document.getElementById('group-message-input').value);
@@ -1005,8 +1007,37 @@ state.selectedGroup = null;
 
 async function loadGroups() {
     try {
-        const groups = await apiRequest('/groups');
-        state.groups = groups;
+        // 获取我加入的群（包括成员列表）
+        const response = await apiRequest('/groups/my-groups');
+        const myGroups = response.groups || [];
+        
+        // 也获取我创建的群
+        const ownedGroups = await apiRequest('/groups');
+        
+        // 合并
+        state.groups = myGroups.map(g => ({
+            id: g.group_id,
+            name: g.group_name || g.group_id,
+            owner_portal: g.owner_portal,
+            is_owner: g.is_owner || false,
+            members: g.members || [],
+            member_count: g.member_count || 0
+        }));
+        
+        // 添加我创建的群
+        ownedGroups.forEach(group => {
+            if (!state.groups.find(g => g.id === group.group_id)) {
+                state.groups.push({
+                    id: group.group_id,
+                    name: group.name,
+                    owner_portal: state.portalUrl,
+                    is_owner: true,
+                    members: group.members || [],
+                    member_count: group.members ? group.members.length : 0
+                });
+            }
+        });
+        
         renderGroups();
     } catch (error) {
         console.error('加载群组失败:', error);
@@ -1094,11 +1125,56 @@ function openGroupChat(group) {
     document.getElementById('group-chat-name').textContent = group.name;
     document.getElementById('group-chat-panel').classList.remove('hidden');
     loadGroupMessages(group.id);
+    loadGroupMembers();
 }
 
 function closeGroupChat() {
     document.getElementById('group-chat-panel').classList.add('hidden');
     state.selectedGroup = null;
+}
+
+function renderGroupMembers(members) {
+    const container = document.getElementById('group-members-list');
+    const myPortal = state.portalUrl;
+    
+    if (!members || members.length === 0) {
+        container.innerHTML = '<div class="empty">暂无成员</div>';
+        return;
+    }
+    
+    container.innerHTML = members.map(member => {
+        const initial = (member.display_name || member.portal || '?').charAt(0).toUpperCase();
+        const isOwner = member.portal === myPortal;
+        const displayPortal = member.portal.replace(/^https?:\/\//, '').split('/')[0];
+        
+        return `
+            <div class="group-member-item">
+                <div class="avatar">${initial}</div>
+                <div class="member-info">
+                    <div class="member-name">${member.display_name || '成员'}</div>
+                    <div class="member-portal">${displayPortal}</div>
+                </div>
+                ${isOwner ? '<span class="member-badge">群主</span>' : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function showGroupMembers() {
+    document.getElementById('group-members-panel').classList.remove('hidden');
+    if (state.selectedGroup && state.selectedGroup.members) {
+        renderGroupMembers(state.selectedGroup.members);
+    }
+}
+
+function hideGroupMembers() {
+    document.getElementById('group-members-panel').classList.add('hidden');
+}
+
+function loadGroupMembers() {
+    if (!state.selectedGroup) return;
+    const members = state.selectedGroup.members || [];
+    renderGroupMembers(members);
 }
 
 async function loadGroupMessages(groupId) {
