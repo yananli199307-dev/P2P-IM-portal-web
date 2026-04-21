@@ -67,6 +67,12 @@ const elements = {
     shareUrlInput: document.getElementById('share-url-input'),
     copyUrlBtn: document.getElementById('copy-url-btn'),
     
+    // 添加联系人
+    addContactBox: document.getElementById('add-contact-box'),
+    addContactUrl: document.getElementById('add-contact-url'),
+    addContactBtn: document.getElementById('add-contact-btn'),
+    addContactMessage: document.getElementById('add-contact-message'),
+    
     // 联系人
     contactsList: document.getElementById('contacts-list'),
     
@@ -397,6 +403,65 @@ function updateRequestBadge() {
 }
 
 // ========== 联系人 ==========
+
+// 添加联系人
+async function addContactByUrl() {
+    const url = elements.addContactUrl.value.trim();
+    
+    if (!url) {
+        elements.addContactMessage.textContent = '请输入 Portal 地址';
+        elements.addContactMessage.className = 'add-contact-message error';
+        return;
+    }
+    
+    // 验证 URL 格式
+    try {
+        new URL(url);
+    } catch (e) {
+        elements.addContactMessage.textContent = '请输入有效的 URL';
+        elements.addContactMessage.className = 'add-contact-message error';
+        return;
+    }
+    
+    // 检查不能添加自己
+    if (url === state.portalUrl) {
+        elements.addContactMessage.textContent = '不能添加自己';
+        elements.addContactMessage.className = 'add-contact-message error';
+        return;
+    }
+    
+    elements.addContactBtn.disabled = true;
+    elements.addContactMessage.textContent = '发送中...';
+    elements.addContactMessage.className = 'add-contact-message';
+    
+    try {
+        // 发送添加联系人请求
+        const response = await apiRequest('/contacts/request', {
+            method: 'POST',
+            body: JSON.stringify({
+                target_portal: url,
+                display_name: state.userName || '用户'
+            })
+        });
+        
+        elements.addContactMessage.textContent = '申请已发送，等待对方接受';
+        elements.addContactMessage.className = 'add-contact-message success';
+        elements.addContactUrl.value = '';
+        
+        // 3秒后清除消息
+        setTimeout(() => {
+            elements.addContactMessage.textContent = '';
+            elements.addContactMessage.className = 'add-contact-message';
+        }, 3000);
+        
+    } catch (error) {
+        console.error('添加联系人失败:', error);
+        elements.addContactMessage.textContent = '添加失败: ' + (error.message || '未知错误');
+        elements.addContactMessage.className = 'add-contact-message error';
+    } finally {
+        elements.addContactBtn.disabled = false;
+    }
+}
 
 async function loadContacts() {
     try {
@@ -860,6 +925,9 @@ function bindEvents() {
     // 分享
     elements.shareBtn.addEventListener('click', toggleShareBox);
     elements.copyUrlBtn.addEventListener('click', copyShareUrl);
+    
+    // 添加联系人
+    elements.addContactBtn.addEventListener('click', addContactByUrl);
     
     // 修改密码
     elements.changePasswordBtn.addEventListener('click', showChangePasswordModal);

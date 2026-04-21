@@ -717,6 +717,51 @@ input:checked + .slider:before {
     background: white;
 }
 
+/* 添加联系人框 */
+.add-contact-box {
+    background: rgba(108, 99, 255, 0.08);
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.add-contact-box h3 {
+    font-size: 14px;
+    margin: 0 0 8px 0;
+    color: var(--primary);
+}
+
+.add-contact-box p {
+    font-size: 13px;
+    color: var(--text-light);
+    margin: 0 0 12px 0;
+}
+
+.add-contact-form {
+    display: flex;
+    gap: 8px;
+}
+
+.add-contact-form input {
+    flex: 1;
+    background: white;
+}
+
+.add-contact-message {
+    font-size: 12px;
+    margin-top: 8px;
+    min-height: 16px;
+}
+
+.add-contact-message.success {
+    color: #10b981;
+}
+
+.add-contact-message.error {
+    color: #ef4444;
+}
+
 /* 设置描述 */
 .setting-desc {
     font-size: 12px;
