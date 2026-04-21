@@ -128,7 +128,8 @@ async function apiRequest(endpoint, options = {}) {
         
         return JSON.parse(text);
     } catch (error) {
-        showToast(error.message, 'error');
+        const errorMsg = error.message || String(error) || '请求失败';
+        showToast(errorMsg, 'error');
         throw error;
     }
 }
@@ -726,6 +727,10 @@ function hideChangePasswordModal() {
 // ========== 工具函数 ==========
 
 function showToast(message, type = 'success') {
+    // 确保 message 是字符串
+    if (typeof message !== 'string') {
+        message = String(message);
+    }
     elements.toast.textContent = message;
     elements.toast.className = 'toast';
     elements.toast.classList.remove('hidden');
@@ -1039,6 +1044,9 @@ async function sendGroupMessage(content) {
                 group_id: state.selectedGroup.id,
                 content: content.trim(),
                 message_type: 'text'
+            },
+            headers: {
+                'X-Sender-Portal': state.portalUrl
             }
         });
         
