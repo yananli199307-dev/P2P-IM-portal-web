@@ -1016,7 +1016,8 @@ async function loadGroups() {
         
         // 合并
         state.groups = myGroups.map(g => ({
-            id: g.group_id,
+            id: g.group_id,  // 用于显示
+            dbId: null,  // 用于API调用
             name: g.group_name || g.group_id,
             owner_portal: g.owner_portal,
             is_owner: g.is_owner || false,
@@ -1029,6 +1030,7 @@ async function loadGroups() {
             if (!state.groups.find(g => g.id === group.group_id)) {
                 state.groups.push({
                     id: group.group_id,
+                    dbId: group.id,  // 数字ID
                     name: group.name,
                     owner_portal: state.portalUrl,
                     is_owner: true,
@@ -1124,7 +1126,17 @@ function openGroupChat(group) {
     state.selectedGroup = group;
     document.getElementById('group-chat-name').textContent = group.name;
     document.getElementById('group-chat-panel').classList.remove('hidden');
-    loadGroupMessages(group.id);
+    
+    // 用 dbId（数字ID）加载消息
+    const groupDbId = group.dbId || (group.id && !group.id.includes('-') ? group.id : null);
+    
+    if (groupDbId) {
+        loadGroupMessages(groupDbId);
+    } else {
+        // 如果没有数字 dbId（从别人群加入的），显示提示
+        // TODO: 后续实现从群主后端拉取消息
+        document.getElementById('group-chat-messages').innerHTML = '<div class="empty">正在从群主同步消息...</div>';
+    }
     loadGroupMembers();
 }
 
@@ -1218,21 +1230,26 @@ async function loadGroupMessages(groupId) {
 async function sendGroupMessage(content) {
     if (!state.selectedGroup || !content.trim()) return;
     
+    // 获取群数据库ID（用于消息存储）
+    const groupDbId = state.selectedGroup.dbId;
+    
+    if (!groupDbId) {
+        showToast('无法发送：需要从群主同步', 'error');
+        return;
+    }
+    
     try {
-        await apiRequest('/messages/group', {
+        // 使用新的 P2P API 发送消息
+        await apiRequest(`/groups/${groupDbId}/messages/p2p`, {
             method: 'POST',
             body: {
-                group_id: state.selectedGroup.id,
                 content: content.trim(),
                 message_type: 'text'
-            },
-            headers: {
-                'X-Sender-Portal': state.portalUrl
             }
         });
         
         document.getElementById('group-message-input').value = '';
-        loadGroupMessages(state.selectedGroup.id);
+        loadGroupMessages(groupDbId);
     } catch (error) {
         console.error('发送群消息失败:', error);
         showToast('发送失败: ' + error.message, 'error');
