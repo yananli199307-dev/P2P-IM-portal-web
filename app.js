@@ -1025,9 +1025,14 @@ async function loadGroups() {
             member_count: g.member_count || 0
         }));
         
-        // 添加我创建的群
+        // 添加我创建的群（或更新已存在的）
         ownedGroups.forEach(group => {
-            if (!state.groups.find(g => g.id === group.group_id)) {
+            const existing = state.groups.find(g => g.id === group.group_id);
+            if (existing) {
+                // 更新已存在的群，添加 dbId
+                existing.dbId = group.id || null;
+                existing.is_owner = true;
+            } else {
                 state.groups.push({
                     id: group.group_id,
                     dbId: group.id || null,  // 数字ID
