@@ -1230,6 +1230,13 @@ async function sendGroupMessage(content) {
     
     const group = state.selectedGroup;
     
+    // 检查是否有 dbId
+    if (!group.dbId) {
+        console.error('Group dbId is null:', group);
+        showToast('无法发送：群信息不完整，请刷新页面重试', 'error');
+        return;
+    }
+    
     try {
         if (group.is_owner) {
             // 我是群主：用 P2P API 发送消息
