@@ -1127,16 +1127,8 @@ function openGroupChat(group) {
     document.getElementById('group-chat-name').textContent = group.name;
     document.getElementById('group-chat-panel').classList.remove('hidden');
     
-    // 用 dbId（数字ID）加载消息
-    const groupDbId = group.dbId || (group.id && !group.id.includes('-') ? group.id : null);
-    
-    if (groupDbId) {
-        loadGroupMessages(groupDbId);
-    } else {
-        // 如果没有数字 dbId（从别人群加入的），显示提示
-        // TODO: 后续实现从群主后端拉取消息
-        document.getElementById('group-chat-messages').innerHTML = '<div class="empty">正在从群主同步消息...</div>';
-    }
+    // 加载消息（支持数字ID和UUID）
+    loadGroupMessages(group);
     loadGroupMembers();
 }
 
@@ -1189,13 +1181,18 @@ function loadGroupMembers() {
     renderGroupMembers(members);
 }
 
-async function loadGroupMessages(groupId) {
+async function loadGroupMessages(group) {
     try {
-        const messages = await apiRequest(`/messages/group/${groupId}`);
+        // 优先用数字 dbId（群主），否则用 UUID（加入的群）
+        const endpoint = group.dbId 
+            ? `/messages/group/${group.dbId}` 
+            : `/messages/group/by-uuid/${group.id}`;
+        
+        const messages = await apiRequest(endpoint);
         const container = document.getElementById('group-chat-messages');
         
         if (messages.length === 0) {
-            container.innerHTML = '<div class="empty">暂无消息</div>';
+            container.innerHTML = '<div class="empty">暂无消息<br>发送一条消息开始聊天吧！</div>';
             return;
         }
         
@@ -1224,32 +1221,34 @@ async function loadGroupMessages(groupId) {
         container.scrollTop = container.scrollHeight;
     } catch (error) {
         console.error('加载群消息失败:', error);
+        document.getElementById('group-chat-messages').innerHTML = '<div class="empty">加载消息失败</div>';
     }
 }
 
 async function sendGroupMessage(content) {
     if (!state.selectedGroup || !content.trim()) return;
     
-    // 获取群数据库ID（用于消息存储）
-    const groupDbId = state.selectedGroup.dbId;
-    
-    if (!groupDbId) {
-        showToast('无法发送：需要从群主同步', 'error');
-        return;
-    }
+    const group = state.selectedGroup;
     
     try {
-        // 使用新的 P2P API 发送消息
-        await apiRequest(`/groups/${groupDbId}/messages/p2p`, {
-            method: 'POST',
-            body: {
-                content: content.trim(),
-                message_type: 'text'
-            }
-        });
+        if (group.is_owner) {
+            // 我是群主：用 P2P API 发送消息
+            await apiRequest(`/groups/${group.dbId}/messages/p2p`, {
+                method: 'POST',
+                body: {
+                    content: content.trim(),
+                    message_type: 'text'
+                }
+            });
+        } else {
+            // 我是成员：用群主的 P2P 端点发送
+            // TODO: 需要从缓存获取群主 portal
+            showToast('成员发送功能开发中', 'error');
+            return;
+        }
         
         document.getElementById('group-message-input').value = '';
-        loadGroupMessages(groupDbId);
+        loadGroupMessages(group);
     } catch (error) {
         console.error('发送群消息失败:', error);
         showToast('发送失败: ' + error.message, 'error');
