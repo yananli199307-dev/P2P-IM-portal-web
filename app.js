@@ -1029,9 +1029,11 @@ async function loadGroups() {
         ownedGroups.forEach(group => {
             const existing = state.groups.find(g => g.id === group.group_id);
             if (existing) {
-                // 更新已存在的群，添加 dbId
+                // 更新已存在的群，添加 dbId 和正确的成员数
                 existing.dbId = group.id || null;
                 existing.is_owner = true;
+                existing.members = group.members || [];
+                existing.member_count = group.member_count || group.members?.length || 0;
             } else {
                 state.groups.push({
                     id: group.group_id,
@@ -1040,7 +1042,7 @@ async function loadGroups() {
                     owner_portal: state.portalUrl,
                     is_owner: true,
                     members: group.members || [],
-                    member_count: group.members ? group.members.length : 0
+                    member_count: group.member_count || group.members?.length || 0
                 });
             }
         });
@@ -1188,9 +1190,9 @@ function loadGroupMembers() {
 
 async function loadGroupMessages(group) {
     try {
-        // 优先用数字 dbId（群主），否则用 UUID（加入的群）
-        const endpoint = group.dbId 
-            ? `/messages/group/${group.dbId}` 
+        // 群主用数字 dbId，成员用 UUID
+        const endpoint = group.is_owner && group.dbId
+            ? `/messages/group/${group.dbId}`
             : `/messages/group/by-uuid/${group.id}`;
         
         const messages = await apiRequest(endpoint);
@@ -1339,6 +1341,9 @@ async function handleInviteMember(e) {
         document.getElementById('invite-member-modal').classList.add('hidden');
         document.getElementById('invite-member-form').reset();
         showToast('邀请已发送');
+        
+        // 刷新群列表以获取最新成员数
+        await loadGroups();
     } catch (error) {
         console.error('邀请失败:', error);
         showToast('邀请失败: ' + error.message, 'error');
