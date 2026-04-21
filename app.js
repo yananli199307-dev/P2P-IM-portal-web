@@ -1260,10 +1260,14 @@ async function sendGroupMessage(content) {
                 }
             });
         } else {
-            // 我是成员：用群主的 P2P 端点发送
-            // TODO: 需要从缓存获取群主 portal
-            showToast('成员发送功能开发中', 'error');
-            return;
+            // 我是成员：用 UUID 发送消息
+            await apiRequest(`/groups/by-uuid/${group.id}/messages/send`, {
+                method: 'POST',
+                body: {
+                    content: content.trim(),
+                    message_type: 'text'
+                }
+            });
         }
         
         document.getElementById('group-message-input').value = '';
