@@ -1315,7 +1315,14 @@ async function handleInviteMember(e) {
         return;
     }
     
-    console.log('Inviting members:', { group_id: state.selectedGroup.id, contact_ids: contactIds });
+    // 使用数字 dbId 邀请
+    const groupDbId = state.selectedGroup.dbId;
+    if (!groupDbId) {
+        showToast('无法邀请：群信息不完整', 'error');
+        return;
+    }
+    
+    console.log('Inviting members:', { group_id: groupDbId, contact_ids: contactIds });
     
     try {
         // 逐个邀请
@@ -1323,7 +1330,7 @@ async function handleInviteMember(e) {
             await apiRequest('/groups/invite', {
                 method: 'POST',
                 body: {
-                    group_id: state.selectedGroup.id,
+                    group_id: groupDbId,
                     contact_id: contactId
                 }
             });
