@@ -1067,7 +1067,7 @@ function renderGroups() {
     
     container.querySelectorAll('.contact-item').forEach(item => {
         item.addEventListener('click', () => {
-            const id = parseInt(item.dataset.id);
+            const id = item.dataset.id;
             const group = state.groups.find(g => g.id === id);
             if (group) {
                 openGroupChat(group);
