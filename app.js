@@ -430,17 +430,30 @@ async function addContactByUrl() {
         return;
     }
     
+    // 检查是否已登录
+    if (!state.portalUrl) {
+        elements.addContactMessage.textContent = '请先登录';
+        elements.addContactMessage.className = 'add-contact-message error';
+        return;
+    }
+    
     elements.addContactBtn.disabled = true;
     elements.addContactMessage.textContent = '发送中...';
     elements.addContactMessage.className = 'add-contact-message';
     
     try {
+        // 生成临时 shared_key
+        const sharedKey = 'sk_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+        
         // 发送添加联系人请求
         const response = await apiRequest('/contact-requests/apply', {
             method: 'POST',
             body: JSON.stringify({
                 target_portal: url,
-                display_name: state.userName || '用户'
+                requester_name: state.userName || '用户',
+                requester_portal: state.portalUrl,
+                shared_key: sharedKey,
+                message: ''
             })
         });
         
