@@ -1017,7 +1017,7 @@ async function loadGroups() {
         // 合并
         state.groups = myGroups.map(g => ({
             id: g.group_id,  // 用于显示
-            dbId: null,  // 用于API调用
+            dbId: g.db_id || null,  // 用于API调用（API返回db_id）
             name: g.group_name || g.group_id,
             owner_portal: g.owner_portal,
             is_owner: g.is_owner || false,
@@ -1030,7 +1030,7 @@ async function loadGroups() {
             if (!state.groups.find(g => g.id === group.group_id)) {
                 state.groups.push({
                     id: group.group_id,
-                    dbId: group.id,  // 数字ID
+                    dbId: group.id || null,  // 数字ID
                     name: group.name,
                     owner_portal: state.portalUrl,
                     is_owner: true,
