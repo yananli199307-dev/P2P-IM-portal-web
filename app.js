@@ -1029,11 +1029,13 @@ async function loadGroups() {
         ownedGroups.forEach(group => {
             const existing = state.groups.find(g => g.id === group.group_id);
             if (existing) {
-                // 更新已存在的群，添加 dbId 和正确的成员数
-                existing.dbId = group.id || null;
-                existing.is_owner = true;
-                existing.members = group.members || [];
-                existing.member_count = group.member_count || group.members?.length || 0;
+                // 只更新群主自己的群
+                if (group.owner_id === state.userId) {
+                    existing.dbId = group.id || null;
+                    existing.is_owner = true;
+                    existing.members = group.members || [];
+                    existing.member_count = group.member_count || group.members?.length || 0;
+                }
             } else {
                 state.groups.push({
                     id: group.group_id,
