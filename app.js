@@ -1149,6 +1149,8 @@ function closeGroupChat() {
 function renderGroupMembers(members) {
     const container = document.getElementById('group-members-list');
     const myPortal = state.portalUrl;
+    const group = state.selectedGroup;
+    const ownerPortal = group ? group.owner_portal : null;
     
     if (!members || members.length === 0) {
         container.innerHTML = '<div class="empty">暂无成员</div>';
@@ -1157,7 +1159,8 @@ function renderGroupMembers(members) {
     
     container.innerHTML = members.map(member => {
         const initial = (member.display_name || member.portal || '?').charAt(0).toUpperCase();
-        const isOwner = member.portal === myPortal;
+        // 判断是否是群主：portal 与群的 owner_portal 匹配
+        const isOwner = ownerPortal && member.portal === ownerPortal;
         const displayPortal = member.portal.replace(/^https?:\/\//, '').split('/')[0];
         
         return `
