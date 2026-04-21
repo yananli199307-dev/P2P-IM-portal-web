@@ -409,6 +409,12 @@ input:focus {
 
 .chat-input-area input {
     flex: 1;
+    padding: 12px 16px;
+    font-size: 16px;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
 }
 
 /* 群成员面板 */
