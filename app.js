@@ -105,20 +105,25 @@ const elements = {
 
 async function apiRequest(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
+    const method = options.method || 'GET';
+    let body = options.body;
+    
+    // 处理 body：如果是对象则 stringify
+    if (body && typeof body === 'object') {
+        body = JSON.stringify(body);
+    }
+    
     const config = {
+        method,
         headers: {
             'Content-Type': 'application/json',
             ...options.headers
         },
-        ...options
+        body
     };
     
     if (state.token) {
         config.headers['Authorization'] = `Bearer ${state.token}`;
-    }
-    
-    if (config.body && typeof config.body === 'object') {
-        config.body = JSON.stringify(config.body);
     }
     
     try {
