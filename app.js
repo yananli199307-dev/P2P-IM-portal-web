@@ -406,9 +406,9 @@ function renderChatList() {
         chats.push({
             type: 'group',
             id: group.group_id,
-            name: group.group_name || '群组',
+            name: group.name || group.group_name || '群组',
             memberCount: group.member_count || 0,
-            avatar: (group.group_name || '群')[0].toUpperCase(),
+            avatar: (group.name || group.group_name || '群')[0].toUpperCase(),
             time: group.last_activity_at || group.created_at || ''
         });
     });
@@ -468,10 +468,10 @@ function renderGroupList() {
     }
     
     container.innerHTML = state.groups.map(group => `
-        <div class="list-item" onclick="openChat('group', '${group.group_id}', '${group.group_name || '群组'.replace(/'/g, "\\'")}')">
-            <div class="avatar">${(group.group_name || '群')[0].toUpperCase()}</div>
+        <div class="list-item" onclick="openChat('group', '${group.group_id}', '${(group.name || group.group_name || '群组').replace(/'/g, "\\'")}')">
+            <div class="avatar">${(group.name || group.group_name || '群')[0].toUpperCase()}</div>
             <div class="list-item-info">
-                <div class="list-item-name">${escapeHtml(group.group_name || '群组')}</div>
+                <div class="list-item-name">${escapeHtml(group.name || group.group_name || '群组')}</div>
                 <div class="list-item-preview">${group.member_count || 0} 人</div>
             </div>
         </div>
