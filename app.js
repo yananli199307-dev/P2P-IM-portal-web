@@ -264,8 +264,23 @@ function renderContactsContent() {
                 <div class="name">${escapeHtml(contact.display_name || '未知')}</div>
                 <div class="portal">${contact.portal_url || ''}</div>
             </div>
+            <button class="btn-icon" onclick="event.stopPropagation(); handleDeleteContact(${contact.id}, '${(contact.display_name || '未知').replace(/'/g, "\\'")}')" style="color: var(--danger);">🗑️</button>
         </div>
     `).join('');
+}
+
+async function handleDeleteContact(contactId, contactName) {
+    if (!confirm(`确定要删除联系人"${contactName}"吗？`)) return;
+    
+    try {
+        await apiRequest(`/contacts/${contactId}`, { method: 'DELETE' });
+        showToast('联系人已删除');
+        await loadContacts();
+        renderContactsContent();
+        renderChatList();
+    } catch (error) {
+        showToast('删除失败: ' + error.message, 'error');
+    }
 }
 
 function renderGroupsContent() {
