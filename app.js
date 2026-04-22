@@ -1080,6 +1080,12 @@ function handleWSMessage(data) {
             loadPrivateMessages(data.portal_url);
         }
         showToast(`新消息 from ${data.sender_name}`);
+    } else if (data.type === 'group_message') {
+        const groupId = data.data?.group_id;
+        if (state.selectedChat?.id === groupId) {
+            loadGroupMessages(groupId);
+        }
+        showToast(`群消息 from ${data.data?.sender_name || '成员'}`);
     }
 }
 
