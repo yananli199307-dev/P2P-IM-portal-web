@@ -314,37 +314,85 @@ async function loadRequests() {
     container.innerHTML = '<div class="loading">加载中</div>';
     
     try {
-        // 获取收到的请求和发出的请求
-        const [received, sent] = await Promise.all([
+        // 获取联系人请求和群邀请
+        const [contactReceived, contactSent, groupInvites] = await Promise.all([
             apiRequest('/contact-requests/received'),
-            apiRequest('/contact-requests/sent')
+            apiRequest('/contact-requests/sent'),
+            apiRequest('/groups/invites')
         ]);
         
-        const requests = [...(received || []), ...(sent || [])];
+        const items = [];
         
-        if (requests.length === 0) {
+        // 添加联系人请求（收到的）
+        (contactReceived || []).forEach(req => {
+            items.push({
+                type: 'contact_received',
+                id: req.id,
+                name: req.your_name || '未知',
+                portal: req.requester_portal,
+                status: req.status,
+                time: req.created_at
+            });
+        });
+        
+        // 添加联系人请求（发出的）
+        (contactSent || []).forEach(req => {
+            items.push({
+                type: 'contact_sent',
+                id: req.id,
+                name: req.your_name || '未知',
+                portal: req.your_portal,
+                status: req.status,
+                time: req.created_at
+            });
+        });
+        
+        // 添加群邀请
+        (groupInvites || []).forEach(invite => {
+            items.push({
+                type: 'group_invite',
+                id: invite.id,
+                name: invite.group_name || '群组',
+                portal: invite.inviter_portal,
+                status: invite.status,
+                groupId: invite.group_id,
+                time: invite.created_at
+            });
+        });
+        
+        // 按时间排序
+        items.sort((a, b) => new Date(b.time) - new Date(a.time));
+        
+        if (items.length === 0) {
             container.innerHTML = '<div class="empty">暂无请求</div>';
             return;
         }
         
-        container.innerHTML = requests.map(req => {
-            const statusClass = req.status === 'accepted' ? 'accepted' : req.status === 'rejected' ? 'rejected' : 'pending';
-            const statusText = req.status === 'accepted' ? '已接受' : req.status === 'rejected' ? '已拒绝' : '未处理';
-            const isReceived = !!req.requester_portal;
-            const name = isReceived ? (req.your_name || '未知') : (req.your_name || '未知');
-            const portal = isReceived ? req.requester_portal : req.your_portal;
+        container.innerHTML = items.map(item => {
+            const statusClass = item.status === 'accepted' ? 'accepted' : item.status === 'rejected' ? 'rejected' : 'pending';
+            const statusText = item.status === 'accepted' ? '已接受' : item.status === 'rejected' ? '已拒绝' : '未处理';
+            
+            let typeLabel = '';
+            if (item.type === 'contact_received') typeLabel = '联系人(收)';
+            else if (item.type === 'contact_sent') typeLabel = '联系人(发)';
+            else if (item.type === 'group_invite') typeLabel = '入群邀请';
             
             return `
                 <div class="request-item">
                     <div class="info">
-                        <div class="name">${escapeHtml(name)} <span style="font-size: 11px; color: var(--text-secondary);">${isReceived ? '(收到)' : '(发出)'}</span></div>
-                        <div class="portal">${portal || ''}</div>
+                        <div class="name">${escapeHtml(item.name)} <span style="font-size: 11px; color: var(--text-secondary);">${typeLabel}</span></div>
+                        <div class="portal">${item.portal || ''}</div>
                     </div>
                     <span class="status ${statusClass}">${statusText}</span>
-                    ${req.status === 'pending' && isReceived ? `
+                    ${item.status === 'pending' ? `
                         <div class="actions">
-                            <button class="btn btn-small btn-primary" onclick="handleRequestAction(${req.id}, 'approve')">接受</button>
-                            <button class="btn btn-small btn-danger" onclick="handleRequestAction(${req.id}, 'reject')">拒绝</button>
+                            ${item.type === 'group_invite' ? `
+                                <button class="btn btn-small btn-primary" onclick="handleGroupInviteAction(${item.id}, 'accept')">接受</button>
+                                <button class="btn btn-small btn-danger" onclick="handleGroupInviteAction(${item.id}, 'reject')">拒绝</button>
+                            ` : item.type === 'contact_received' ? `
+                                <button class="btn btn-small btn-primary" onclick="handleRequestAction(${item.id}, 'approve')">接受</button>
+                                <button class="btn btn-small btn-danger" onclick="handleRequestAction(${item.id}, 'reject')">拒绝</button>
+                            ` : ''}
                         </div>
                     ` : ''}
                 </div>
@@ -352,6 +400,21 @@ async function loadRequests() {
         }).join('');
     } catch (error) {
         container.innerHTML = '<div class="empty">加载失败: ' + escapeHtml(error.message) + '</div>';
+    }
+}
+
+async function handleGroupInviteAction(inviteId, action) {
+    try {
+        const endpoint = action === 'accept' 
+            ? `/groups/invites/${inviteId}/accept`
+            : `/groups/invites/${inviteId}/reject`;
+        await apiRequest(endpoint, { method: 'POST' });
+        showToast(action === 'accept' ? '已接受入群邀请' : '已拒绝入群邀请');
+        await loadGroups();
+        loadRequests();
+        renderChatList();
+    } catch (error) {
+        showToast('操作失败: ' + error.message, 'error');
     }
 }
 
