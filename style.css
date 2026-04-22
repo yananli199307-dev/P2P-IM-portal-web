@@ -510,6 +510,21 @@ input:focus {
     color: white;
 }
 
+.group-member-item .btn-remove-member {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--danger, #dc3545);
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin-left: auto;
+}
+
+.group-member-item .btn-remove-member:hover {
+    opacity: 0.8;
+}
+
 /* 设置页 */
 .settings-list {
     background: var(--white);

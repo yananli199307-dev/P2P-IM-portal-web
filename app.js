@@ -1161,16 +1161,21 @@ function renderGroupMembers(members) {
         const initial = (member.display_name || member.portal || '?').charAt(0).toUpperCase();
         // 判断是否是群主：portal 与群的 owner_portal 匹配
         const isOwner = ownerPortal && member.portal === ownerPortal;
+        // 判断是否是自己
+        const isMe = member.portal === myPortal;
+        // 判断是否能删除（群主且不是自己）
+        const canRemove = group.is_owner && !isMe && !isOwner;
         const displayPortal = member.portal.replace(/^https?:\/\//, '').split('/')[0];
         
         return `
             <div class="group-member-item">
                 <div class="avatar">${initial}</div>
                 <div class="member-info">
-                    <div class="member-name">${member.display_name || '成员'}</div>
+                    <div class="member-name">${member.display_name || '成员'} ${isMe ? '(我)' : ''}</div>
                     <div class="member-portal">${displayPortal}</div>
                 </div>
                 ${isOwner ? '<span class="member-badge">群主</span>' : ''}
+                ${canRemove ? `<button class="btn-remove-member" onclick="removeGroupMember('${member.portal}')">移除</button>` : ''}
             </div>
         `;
     }).join('');
@@ -1185,6 +1190,40 @@ function showGroupMembers() {
 
 function hideGroupMembers() {
     document.getElementById('group-members-panel').classList.add('hidden');
+}
+
+async function removeGroupMember(memberPortal) {
+    if (!state.selectedGroup || !state.selectedGroup.dbId) {
+        showToast('无法删除：群信息不完整', 'error');
+        return;
+    }
+    
+    if (!confirm('确定要移除该成员吗？')) {
+        return;
+    }
+    
+    try {
+        await apiRequest(`/groups/${state.selectedGroup.dbId}/members/remove`, {
+            method: 'POST',
+            body: {
+                member_portal: memberPortal
+            }
+        });
+        
+        showToast('成员已移除');
+        
+        // 刷新成员列表
+        const members = state.selectedGroup.members || [];
+        const updatedMembers = members.filter(m => m.portal !== memberPortal);
+        state.selectedGroup.members = updatedMembers;
+        renderGroupMembers(updatedMembers);
+        
+        // 重新加载群组
+        loadGroups();
+    } catch (error) {
+        console.error('移除成员失败:', error);
+        showToast('移除失败: ' + error.message, 'error');
+    }
 }
 
 function loadGroupMembers() {
