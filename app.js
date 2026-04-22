@@ -657,10 +657,13 @@ async function loadPrivateMessages(portal) {
             return;
         }
         
+        // 反转消息顺序，最新的在下面
+        messages.reverse();
+        
         container.innerHTML = messages.map(msg => `
             <div class="message ${msg.is_from_me ? 'sent' : 'received'}">
                 ${!msg.is_from_me ? `<div class="message-sender">${escapeHtml(msg.sender_name || '对方')}</div>` : ''}
-                <div class="message-content">${escapeHtml(msg.content)}</div>
+                <div class="message-content" style="white-space: pre-wrap;">${escapeHtml(msg.content)}</div>
                 <div class="message-time">${formatTime(msg.created_at)}</div>
             </div>
         `).join('');
@@ -708,10 +711,13 @@ async function loadGroupMessages(groupId) {
             return;
         }
         
+        // 反转消息顺序，最新的在下面
+        messages.reverse();
+        
         container.innerHTML = messages.map(msg => `
             <div class="message ${msg.is_from_owner ? 'sent' : 'received'}">
                 ${!msg.is_from_owner ? `<div class="message-sender">${escapeHtml(msg.sender_name || '成员')}</div>` : ''}
-                <div class="message-content">${escapeHtml(msg.content)}</div>
+                <div class="message-content" style="white-space: pre-wrap;">${escapeHtml(msg.content)}</div>
                 <div class="message-time">${formatTime(msg.created_at)}</div>
             </div>
         `).join('');
@@ -745,8 +751,8 @@ async function sendMessage() {
 
 async function sendGroupMessage() {
     const input = document.getElementById('group-message-input');
-    const content = input.value.trim();
-    if (!content) return;
+    const content = input.value;
+    if (!content.trim()) return;
     
     const groupId = state.selectedChat?.id;
     if (!groupId) return;
