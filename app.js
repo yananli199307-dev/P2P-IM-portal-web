@@ -208,10 +208,12 @@ function switchListType(btn) {
 async function checkInitStatus() {
     try {
         const data = await fetch(`${API_URL}/auth/status`).then(r => r.json());
-        if (data.is_initialized) {
+        // 后端返回 initialized 或 is_initialized
+        const isInitialized = data.initialized || data.is_initialized;
+        if (data.portal_url) {
             state.portalUrl = data.portal_url;
         }
-        return data.is_initialized;
+        return isInitialized;
     } catch {
         return false;
     }
