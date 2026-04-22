@@ -988,6 +988,13 @@ function bindEvents() {
     document.getElementById('close-group-chat')?.addEventListener('click', closeGroupChat);
     document.getElementById('invite-member-btn')?.addEventListener('click', showInviteMemberModal);
     document.getElementById('show-group-members-btn')?.addEventListener('click', showGroupMembers);
+    
+    // 通用弹窗关闭
+    document.querySelectorAll('.modal-close, .modal-cancel').forEach(btn => {
+        btn?.addEventListener('click', () => {
+            btn.closest('.modal')?.classList.add('hidden');
+        });
+    });
     document.getElementById('close-group-members-btn')?.addEventListener('click', hideGroupMembers);
     document.getElementById('leave-group-btn')?.addEventListener('click', handleLeaveGroup);
     document.getElementById('dissolve-group-btn')?.addEventListener('click', handleDissolveGroup);
