@@ -98,7 +98,8 @@ function bindEvents() {
     document.querySelector('#share-modal .modal-close, #share-modal .modal-cancel')?.addEventListener('click', () => hideModal('share-modal'));
     
     // 添加联系人弹窗
-    document.getElementById('add-contact-btn')?.addEventListener('click', handleAddContact);
+    document.getElementById('add-contact-btn')?.addEventListener('click', showAddContactModal);
+    document.getElementById('create-group-btn')?.addEventListener('click', showCreateGroupModal);
     document.querySelector('#add-contact-modal .modal-close, #add-contact-modal .modal-cancel')?.addEventListener('click', () => hideModal('add-contact-modal'));
     
     // 通用弹窗关闭
