@@ -57,8 +57,17 @@ async function init() {
     
     if (!isInitialized) {
         showInitPage(window.location.origin);
-    } else if (state.token && state.user) {
-        showMainPage();
+    } else if (state.token) {
+        // 有 token，尝试加载用户信息
+        try {
+            await loadUserInfo();
+            showMainPage();
+        } catch (e) {
+            // token 无效，清除并显示登录页
+            localStorage.removeItem('token');
+            state.token = null;
+            showLoginPage();
+        }
     } else {
         showLoginPage();
     }
