@@ -1062,7 +1062,7 @@ function renderGroups() {
     if (!container) return;
     
     if (state.groups.length === 0) {
-        container.innerHTML = '<div class="empty">暂无群组<br>点击上方按钮创建</div>';
+        container.innerHTML = '<div class="empty">暂无群组<br>👆 点击上方按钮创建群组</div>';
         return;
     }
     
@@ -1301,11 +1301,15 @@ async function loadGroupMessages(group) {
             ? `/messages/group/${group.dbId}`
             : `/messages/group/by-uuid/${group.id}`;
         
+        // 显示加载状态
+        const container = document.getElementById('group-chat-messages');
+        container.innerHTML = '<div class="loading">加载消息</div>';
+        
         const messages = await apiRequest(endpoint);
         const container = document.getElementById('group-chat-messages');
         
         if (messages.length === 0) {
-            container.innerHTML = '<div class="empty">暂无消息<br>发送一条消息开始聊天吧！</div>';
+            container.innerHTML = '<div class="empty">暂无群消息<br>发送消息开始聊天吧！</div>';
             return;
         }
         

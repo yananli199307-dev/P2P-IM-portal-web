@@ -385,6 +385,45 @@ input:focus {
     gap: 12px;
 }
 
+/* 空状态和加载 */
+.empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary, #999);
+    font-size: 14px;
+}
+
+.empty::before {
+    content: '💬';
+    display: block;
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+/* 加载动画 */
+.loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary, #999);
+}
+
+.loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border, #ddd);
+    border-top-color: var(--primary, #6c51ff);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 .message {
     max-width: 80%;
     padding: 12px 16px;
