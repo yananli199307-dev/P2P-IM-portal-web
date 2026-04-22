@@ -608,6 +608,11 @@ h2 {
     border-radius: var(--radius);
     font-size: 14px;
     min-width: 0;
+    resize: none;
+    min-height: 40px;
+    max-height: 120px;
+    overflow-y: auto;
+    line-height: 1.4;
 }
 
 .message-input:focus {

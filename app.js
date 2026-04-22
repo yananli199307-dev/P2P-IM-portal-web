@@ -132,14 +132,20 @@ function bindEvents() {
     
     // 发送消息
     document.getElementById('send-btn')?.addEventListener('click', sendMessage);
-    document.getElementById('message-input')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
+    document.getElementById('message-input')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
     });
     
     // 发送群消息
     document.getElementById('send-group-btn')?.addEventListener('click', sendGroupMessage);
-    document.getElementById('group-message-input')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendGroupMessage();
+    document.getElementById('group-message-input')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendGroupMessage();
+        }
     });
     
     // 群成员
