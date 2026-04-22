@@ -941,9 +941,18 @@ function applyFormHandler(targetPortal) {
         const message = document.getElementById('apply-message').value;
         
         try {
+            // 生成 shared_key
+            const sharedKey = 'sk_' + Math.random().toString(36).substring(2, 15);
+            
             await apiRequest('/contact-requests/apply', {
                 method: 'POST',
-                body: { target_portal: targetPortal, your_portal: portal, your_name: name, message }
+                body: { 
+                    target_portal: targetPortal, 
+                    requester_portal: portal, 
+                    requester_name: name, 
+                    shared_key: sharedKey,
+                    message 
+                }
             });
             showToast('申请已发送');
             setTimeout(() => window.close(), 1500);
@@ -958,9 +967,17 @@ async function handleAddContact() {
     if (!url) return;
     
     try {
+        // 生成 shared_key
+        const sharedKey = 'sk_' + Math.random().toString(36).substring(2, 15);
+        
         await apiRequest('/contact-requests/apply', {
             method: 'POST',
-            body: { target_portal: url }
+            body: { 
+                target_portal: url,
+                requester_portal: state.portalUrl,
+                requester_name: state.user?.display_name || '用户',
+                shared_key: sharedKey
+            }
         });
         showToast('申请已发送');
         hideModal('add-contact-modal');
