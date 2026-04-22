@@ -265,8 +265,13 @@ async function loadRequests() {
     container.innerHTML = '<div class="loading">加载中</div>';
     
     try {
-        const data = await apiRequest('/contact-requests');
-        const requests = data.requests || [];
+        // 获取收到的请求和发出的请求
+        const [received, sent] = await Promise.all([
+            apiRequest('/contact-requests/received'),
+            apiRequest('/contact-requests/sent')
+        ]);
+        
+        const requests = [...(received || []), ...(sent || [])];
         
         if (requests.length === 0) {
             container.innerHTML = '<div class="empty">暂无请求</div>';
@@ -276,17 +281,20 @@ async function loadRequests() {
         container.innerHTML = requests.map(req => {
             const statusClass = req.status === 'accepted' ? 'accepted' : req.status === 'rejected' ? 'rejected' : 'pending';
             const statusText = req.status === 'accepted' ? '已接受' : req.status === 'rejected' ? '已拒绝' : '未处理';
+            const isReceived = !!req.requester_portal;
+            const name = isReceived ? (req.your_name || '未知') : (req.your_name || '未知');
+            const portal = isReceived ? req.requester_portal : req.your_portal;
             
             return `
                 <div class="request-item">
                     <div class="info">
-                        <div class="name">${escapeHtml(req.your_name || '未知')}</div>
-                        <div class="portal">${req.requester_portal || req.your_portal || ''}</div>
+                        <div class="name">${escapeHtml(name)} <span style="font-size: 11px; color: var(--text-secondary);">${isReceived ? '(收到)' : '(发出)'}</span></div>
+                        <div class="portal">${portal || ''}</div>
                     </div>
                     <span class="status ${statusClass}">${statusText}</span>
-                    ${req.status === 'pending' ? `
+                    ${req.status === 'pending' && isReceived ? `
                         <div class="actions">
-                            <button class="btn btn-small btn-primary" onclick="handleRequestAction(${req.id}, 'accept')">接受</button>
+                            <button class="btn btn-small btn-primary" onclick="handleRequestAction(${req.id}, 'approve')">接受</button>
                             <button class="btn btn-small btn-danger" onclick="handleRequestAction(${req.id}, 'reject')">拒绝</button>
                         </div>
                     ` : ''}
@@ -294,14 +302,17 @@ async function loadRequests() {
             `;
         }).join('');
     } catch (error) {
-        container.innerHTML = '<div class="empty">加载失败</div>';
+        container.innerHTML = '<div class="empty">加载失败: ' + escapeHtml(error.message) + '</div>';
     }
 }
 
 async function handleRequestAction(requestId, action) {
     try {
-        await apiRequest(`/contact-requests/${requestId}/${action}`, { method: 'POST' });
-        showToast(action === 'accept' ? '已接受' : '已拒绝');
+        const endpoint = action === 'approve' 
+            ? `/contact-requests/${requestId}/approve`
+            : `/contact-requests/${requestId}/reject`;
+        await apiRequest(endpoint, { method: 'POST' });
+        showToast(action === 'approve' ? '已接受' : '已拒绝');
         loadRequests();
         await loadContacts();
         renderChatList();
