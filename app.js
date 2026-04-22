@@ -990,6 +990,7 @@ function bindEvents() {
     document.getElementById('show-group-members-btn')?.addEventListener('click', showGroupMembers);
     document.getElementById('close-group-members-btn')?.addEventListener('click', hideGroupMembers);
     document.getElementById('leave-group-btn')?.addEventListener('click', handleLeaveGroup);
+    document.getElementById('dissolve-group-btn')?.addEventListener('click', handleDissolveGroup);
     document.getElementById('invite-member-form')?.addEventListener('submit', handleInviteMember);
     document.getElementById('send-group-btn')?.addEventListener('click', () => {
         sendGroupMessage(document.getElementById('group-message-input').value);
@@ -1137,12 +1138,16 @@ function openGroupChat(group) {
     document.getElementById('group-chat-name').textContent = group.name;
     document.getElementById('group-chat-panel').classList.remove('hidden');
     
-    // 群主不显示退出按钮，成员显示
+    // 群主显示解散按钮，成员显示退出按钮
     const leaveBtn = document.getElementById('leave-group-btn');
+    const dissolveBtn = document.getElementById('dissolve-group-btn');
+    
     if (group.is_owner) {
         leaveBtn.classList.add('hidden');
+        dissolveBtn.classList.remove('hidden');
     } else {
         leaveBtn.classList.remove('hidden');
+        dissolveBtn.classList.add('hidden');
     }
     
     // 加载消息（支持数字ID和UUID）
@@ -1176,6 +1181,30 @@ async function handleLeaveGroup() {
     } catch (error) {
         console.error('退出群聊失败:', error);
         showToast('退出失败: ' + error.message, 'error');
+    }
+}
+
+async function handleDissolveGroup() {
+    if (!state.selectedGroup || !state.selectedGroup.dbId) {
+        showToast('无法解散：群信息不完整', 'error');
+        return;
+    }
+    
+    if (!confirm('确定要解散该群吗？解散后所有成员都将退出，群消息将被删除。')) {
+        return;
+    }
+    
+    try {
+        await apiRequest(`/groups/${state.selectedGroup.dbId}/dissolve`, {
+            method: 'POST'
+        });
+        
+        showToast('群聊已解散');
+        closeGroupChat();
+        loadGroups();
+    } catch (error) {
+        console.error('解散群聊失败:', error);
+        showToast('解散失败: ' + error.message, 'error');
     }
 }
 
