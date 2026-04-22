@@ -923,9 +923,9 @@ function loginFormHandler() {
                 method: 'POST',
                 body: { portal_url: portalUrl, password }
             });
-            state.token = data.token;
+            state.token = data.access_token;
             state.portalUrl = portalUrl;
-            localStorage.setItem('token', data.token);
+            localStorage.setItem('token', data.access_token);
             showMainPage();
         } catch (error) {
             showToast('登录失败: ' + error.message, 'error');
