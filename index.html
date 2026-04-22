@@ -195,6 +195,33 @@
                     </div>
                 </div>
 
+                <!-- 设置内容页 -->
+                <div id="settings-page" class="content-page hidden">
+                    <div class="chat-header">
+                        <div class="chat-user-info">
+                            <span id="settings-title">设置</span>
+                        </div>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div style="background: var(--white); border-radius: var(--radius); padding: 20px; margin-bottom: 20px;">
+                            <h4 style="margin-bottom: 15px;">修改密码</h4>
+                            <div class="input-group">
+                                <label style="display: block; margin-bottom: 8px; font-size: 14px;">当前密码</label>
+                                <input type="password" id="old-password" placeholder="请输入当前密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                            </div>
+                            <div class="input-group" style="margin-top: 15px;">
+                                <label style="display: block; margin-bottom: 8px; font-size: 14px;">新密码</label>
+                                <input type="password" id="new-password" placeholder="请输入新密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                            </div>
+                            <div class="input-group" style="margin-top: 15px;">
+                                <label style="display: block; margin-bottom: 8px; font-size: 14px;">确认新密码</label>
+                                <input type="password" id="confirm-password" placeholder="请再次输入新密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                            </div>
+                            <button id="change-password-btn" class="btn btn-primary" style="margin-top: 20px; width: 100%;">确认修改</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 私聊内容 -->
                 <div id="chat-page" class="content-page hidden">
                     <div class="chat-header">

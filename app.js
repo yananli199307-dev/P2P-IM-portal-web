@@ -97,6 +97,9 @@ function bindEvents() {
     document.getElementById('copy-url-btn')?.addEventListener('click', copyShareUrl);
     document.querySelector('#share-modal .modal-close, #share-modal .modal-cancel')?.addEventListener('click', () => hideModal('share-modal'));
     
+    // 修改密码
+    document.getElementById('change-password-btn')?.addEventListener('click', handleChangePassword);
+    
     // 添加联系人弹窗
     document.getElementById('add-contact-btn')?.addEventListener('click', showAddContactModal);
     document.getElementById('do-add-contact-btn')?.addEventListener('click', handleAddContactSubmit);
@@ -186,8 +189,8 @@ function switchTab(tab) {
         // 通讯录默认显示联系人列表
         switchContactTab('contacts');
     } else if (tab === 'settings') {
-        // 设置显示欢迎页
-        document.getElementById('welcome-page')?.classList.remove('hidden');
+        // 设置显示设置页
+        document.getElementById('settings-page')?.classList.remove('hidden');
     } else if (tab === 'messages') {
         // 消息默认显示欢迎页
         document.getElementById('welcome-page')?.classList.remove('hidden');
@@ -995,4 +998,38 @@ function logout() {
     state.token = null;
     state.user = null;
     location.reload();
+}
+
+async function handleChangePassword() {
+    const oldPassword = document.getElementById('old-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    if (!oldPassword || !newPassword || !confirmPassword) {
+        showToast('请填写所有字段', 'error');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showToast('两次输入的新密码不一致', 'error');
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        showToast('新密码至少6位', 'error');
+        return;
+    }
+    
+    try {
+        await apiRequest('/auth/change-password', {
+            method: 'POST',
+            body: { old_password: oldPassword, new_password: newPassword }
+        });
+        showToast('密码修改成功');
+        document.getElementById('old-password').value = '';
+        document.getElementById('new-password').value = '';
+        document.getElementById('confirm-password').value = '';
+    } catch (error) {
+        showToast('修改失败: ' + error.message, 'error');
+    }
 }
