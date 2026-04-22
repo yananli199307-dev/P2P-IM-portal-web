@@ -1306,7 +1306,6 @@ async function loadGroupMessages(group) {
         container.innerHTML = '<div class="loading">加载消息</div>';
         
         const messages = await apiRequest(endpoint);
-        const container = document.getElementById('group-chat-messages');
         
         if (messages.length === 0) {
             container.innerHTML = '<div class="empty">暂无群消息<br>发送消息开始聊天吧！</div>';
