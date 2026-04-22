@@ -1106,13 +1106,22 @@ function connectWebSocket() {
 
 function handleWSMessage(data) {
     console.log('[WS] Received:', JSON.stringify(data));
-    alert('WS收到: ' + JSON.stringify(data));
     
     if (data.type === 'new_message') {
         // 后端发送格式: {type: 'new_message', data: {portal_url, sender_name, ...}}
         const msgData = data.data || data;
-        if (state.selectedChat?.id === msgData.portal_url) {
-            loadPrivateMessages(msgData.portal_url);
+        const portalUrl = msgData.portal_url;
+        
+        // 查找对应的联系人
+        const contact = state.contacts.find(c => c.portal_url === portalUrl);
+        if (contact) {
+            // 如果正在和这个联系人聊天，刷新消息列表
+            if (state.selectedChat?.type === 'private' && state.selectedChat?.id === portalUrl) {
+                loadPrivateMessages(portalUrl);
+            }
+            // 刷新联系人列表（显示未读）
+            loadContacts();
+            renderChatList();
         }
         showToast(`新消息 from ${msgData.sender_name || '未知'}`);
     } else if (data.type === 'group_message') {
