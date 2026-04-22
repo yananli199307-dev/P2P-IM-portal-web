@@ -126,6 +126,11 @@ input:focus {
     color: var(--text);
 }
 
+.btn-danger {
+    background: var(--danger, #dc3545);
+    color: white;
+}
+
 .btn-small {
     width: auto;
     padding: 8px 16px;

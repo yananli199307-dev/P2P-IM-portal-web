@@ -989,6 +989,7 @@ function bindEvents() {
     document.getElementById('invite-member-btn')?.addEventListener('click', showInviteMemberModal);
     document.getElementById('show-group-members-btn')?.addEventListener('click', showGroupMembers);
     document.getElementById('close-group-members-btn')?.addEventListener('click', hideGroupMembers);
+    document.getElementById('leave-group-btn')?.addEventListener('click', handleLeaveGroup);
     document.getElementById('invite-member-form')?.addEventListener('submit', handleInviteMember);
     document.getElementById('send-group-btn')?.addEventListener('click', () => {
         sendGroupMessage(document.getElementById('group-message-input').value);
@@ -1136,6 +1137,14 @@ function openGroupChat(group) {
     document.getElementById('group-chat-name').textContent = group.name;
     document.getElementById('group-chat-panel').classList.remove('hidden');
     
+    // 群主不显示退出按钮，成员显示
+    const leaveBtn = document.getElementById('leave-group-btn');
+    if (group.is_owner) {
+        leaveBtn.classList.add('hidden');
+    } else {
+        leaveBtn.classList.remove('hidden');
+    }
+    
     // 加载消息（支持数字ID和UUID）
     loadGroupMessages(group);
     loadGroupMembers();
@@ -1144,6 +1153,30 @@ function openGroupChat(group) {
 function closeGroupChat() {
     document.getElementById('group-chat-panel').classList.add('hidden');
     state.selectedGroup = null;
+}
+
+async function handleLeaveGroup() {
+    if (!state.selectedGroup || !state.selectedGroup.id) {
+        showToast('无法退出：群信息不完整', 'error');
+        return;
+    }
+    
+    if (!confirm('确定要退出该群吗？退出后将不再接收群消息。')) {
+        return;
+    }
+    
+    try {
+        await apiRequest(`/groups/by-uuid/${state.selectedGroup.id}/leave`, {
+            method: 'POST'
+        });
+        
+        showToast('已退出群聊');
+        closeGroupChat();
+        loadGroups();
+    } catch (error) {
+        console.error('退出群聊失败:', error);
+        showToast('退出失败: ' + error.message, 'error');
+    }
 }
 
 function renderGroupMembers(members) {
