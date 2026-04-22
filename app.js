@@ -258,7 +258,7 @@ function renderChatList() {
     const container = document.getElementById('chat-list');
     if (!container) return;
     
-    // 合并私聊和群聊
+    // 合并私聊和群聊，统一显示预览
     const chats = [];
     
     // 私聊
@@ -268,7 +268,8 @@ function renderChatList() {
             id: contact.portal_url,
             name: contact.display_name || '未知',
             portal: contact.portal_url,
-            avatar: (contact.display_name || '?')[0].toUpperCase()
+            avatar: (contact.display_name || '?')[0].toUpperCase(),
+            time: contact.updated_at || contact.created_at || ''
         });
     });
     
@@ -279,8 +280,16 @@ function renderChatList() {
             id: group.group_id,
             name: group.group_name || '群组',
             memberCount: group.member_count || 0,
-            avatar: (group.group_name || '群')[0].toUpperCase()
+            avatar: (group.group_name || '群')[0].toUpperCase(),
+            time: group.updated_at || ''
         });
+    });
+    
+    // 按时间排序（最新的在前）
+    chats.sort((a, b) => {
+        if (!a.time) return 1;
+        if (!b.time) return -1;
+        return new Date(b.time) - new Date(a.time);
     });
     
     if (chats.length === 0) {
@@ -293,11 +302,13 @@ function renderChatList() {
             <div class="avatar">${chat.avatar}</div>
             <div class="list-item-info">
                 <div class="list-item-name">${escapeHtml(chat.name)}</div>
-                <div class="list-item-preview">${chat.type === 'group' ? `${chat.memberCount} 人` : chat.portal || ''}</div>
+                <div class="list-item-preview">${chat.type === 'group' ? `${chat.memberCount} 人` : ''}</div>
             </div>
+            ${chat.time ? `<div class="list-item-time">${formatTime(chat.time)}</div>` : ''}
         </div>
     `).join('');
 }
+
 
 function renderContactList() {
     const container = document.getElementById('contact-list');
