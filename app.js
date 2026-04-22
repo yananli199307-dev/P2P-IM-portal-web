@@ -269,7 +269,7 @@ function renderChatList() {
             name: contact.display_name || '未知',
             portal: contact.portal_url,
             avatar: (contact.display_name || '?')[0].toUpperCase(),
-            time: contact.last_message_at || contact.updated_at || contact.created_at || ''
+            time: contact.last_activity_at || contact.updated_at || contact.created_at || ''
         });
     });
     
@@ -281,7 +281,7 @@ function renderChatList() {
             name: group.group_name || '群组',
             memberCount: group.member_count || 0,
             avatar: (group.group_name || '群')[0].toUpperCase(),
-            time: group.last_message_at || group.updated_at || group.created_at || ''
+            time: group.last_activity_at || group.created_at || ''
         });
     });
     
