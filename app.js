@@ -368,7 +368,7 @@ async function loadUserInfo() {
 async function loadContacts() {
     try {
         const data = await apiRequest('/contacts');
-        state.contacts = data.contacts || [];
+        state.contacts = Array.isArray(data) ? data : (data.contacts || []);
     } catch (error) {
         console.error('Load contacts failed:', error);
         state.contacts = [];
@@ -378,7 +378,7 @@ async function loadContacts() {
 async function loadGroups() {
     try {
         const data = await apiRequest('/groups/my-groups');
-        state.groups = data.groups || [];
+        state.groups = Array.isArray(data) ? data : (data.groups || []);
     } catch (error) {
         console.error('Load groups failed:', error);
         state.groups = [];
