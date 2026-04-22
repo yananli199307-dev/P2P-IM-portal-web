@@ -243,15 +243,19 @@ function renderGroupsContent() {
         return;
     }
     
-    container.innerHTML = state.groups.map(group => `
-        <div class="contact-list-item" onclick="openChat('group', '${group.group_id}', '${(group.name || '群组').replace(/'/g, "\\'")}')">
-            <div class="avatar">${(group.name || '群')[0].toUpperCase()}</div>
-            <div class="info">
-                <div class="name">${escapeHtml(group.name || '群组')}</div>
-                <div class="portal">${group.member_count || 0} 人</div>
+    container.innerHTML = state.groups.map(group => {
+        const gName = group.name || group.group_name || '群组';
+        const gAvatar = (group.name || group.group_name || '群')[0].toUpperCase();
+        return `
+            <div class="contact-list-item" onclick="openChat('group', '${group.group_id}', '${gName.replace(/'/g, "\\'")}')">
+                <div class="avatar">${gAvatar}</div>
+                <div class="info">
+                    <div class="name">${escapeHtml(gName)} ${group.is_owner ? '<span style="color: var(--primary); font-size: 12px;">(群主)</span>' : ''}</div>
+                    <div class="portal">${group.member_count || 0} 人</div>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function loadRequests() {
@@ -403,10 +407,11 @@ function renderChatList() {
     
     // 群聊
     state.groups.forEach(group => {
+        const gName = group.name || group.group_name || '群组';
         chats.push({
             type: 'group',
             id: group.group_id,
-            name: group.name || group.group_name || '群组',
+            name: gName,
             memberCount: group.member_count || 0,
             avatar: (group.name || group.group_name || '群')[0].toUpperCase(),
             time: group.last_activity_at || group.created_at || ''
@@ -541,6 +546,8 @@ function openGroupChat(groupId, name) {
     document.querySelectorAll('.content-page').forEach(p => p.classList.add('hidden'));
     document.getElementById('group-chat-page')?.classList.remove('hidden');
     
+    currentGroupUUID = groupId;
+    
     document.getElementById('group-chat-name').textContent = name;
     document.getElementById('group-chat-avatar').textContent = (name || '群')[0].toUpperCase();
     
@@ -548,14 +555,9 @@ function openGroupChat(groupId, name) {
     const group = state.groups.find(g => g.group_id === groupId);
     document.getElementById('group-member-count').textContent = group ? `${group.member_count || 0} 人` : '';
     
-    // 显示/隐藏退出按钮
-    const leaveBtn = document.getElementById('group-leave-btn');
-    if (group && !group.is_owner) {
-        leaveBtn.classList.remove('hidden');
-        leaveBtn.onclick = () => handleLeaveGroup(groupId);
-    } else {
-        leaveBtn.classList.add('hidden');
-    }
+    // 显示/隐藏成员按钮
+    const membersBtn = document.getElementById('group-members-btn');
+    if (membersBtn) membersBtn.classList.remove('hidden');
     
     loadGroupMessages(groupId);
 }
@@ -640,9 +642,62 @@ async function sendGroupMessage() {
 }
 
 // ==================== 群成员 ====================
-function showGroupMembers() {
+let currentGroupId = null;
+let currentGroupUUID = null;
+
+async function showGroupMembers() {
     const panel = document.querySelector('.group-members-panel');
     if (panel) panel.classList.remove('hidden');
+    
+    if (!currentGroupUUID) return;
+    
+    const container = document.getElementById('group-members-list');
+    container.innerHTML = '<div class="loading">加载中...</div>';
+    
+    try {
+        const group = state.groups.find(g => g.group_id === currentGroupUUID);
+        const isOwner = group?.is_owner;
+        
+        // 获取群组成员详情
+        const endpoint = group?.db_id 
+            ? `/groups/${group.db_id}/members`
+            : `/groups/my-groups`; // fallback
+        
+        let members = [];
+        if (group?.db_id) {
+            const data = await apiRequest(endpoint);
+            members = data.members || [];
+        }
+        
+        if (members.length === 0) {
+            container.innerHTML = '<div class="empty">暂无成员</div>';
+            return;
+        }
+        
+        container.innerHTML = members.map(member => `
+            <div class="group-member-item">
+                <div class="avatar">${(member.display_name || '?')[0].toUpperCase()}</div>
+                <div class="member-info">
+                    <div class="member-name">${escapeHtml(member.display_name || '未知')}</div>
+                    <div class="member-portal">${member.portal || ''}</div>
+                </div>
+                ${isOwner && member.portal !== state.user?.portal_url ? `
+                    <button class="btn-remove-member" onclick="handleRemoveMember(${member.id || 0}, '${member.portal || ''}')">移除</button>
+                ` : ''}
+            </div>
+        `).join('');
+        
+        // 添加群主标识
+        container.innerHTML += `
+            <div style="padding: 10px; border-top: 1px solid var(--border); margin-top: 10px;">
+                <button class="btn btn-small ${isOwner ? 'btn-danger' : 'btn-secondary'}" onclick="${isOwner ? 'handleDismissGroup()' : 'handleLeaveGroup()'}">
+                    ${isOwner ? '解散群聊' : '退出群聊'}
+                </button>
+            </div>
+        `;
+    } catch (error) {
+        container.innerHTML = '<div class="empty">加载失败</div>';
+    }
 }
 
 function hideGroupMembers() {
@@ -791,18 +846,61 @@ async function handleCreateGroup(e) {
 }
 
 async function handleLeaveGroup(groupId) {
+    const gid = groupId || currentGroupUUID;
     if (!confirm('确定要退出该群吗？')) return;
     
     try {
-        await apiRequest(`/groups/by-uuid/${groupId}/leave`, { method: 'POST' });
+        await apiRequest(`/groups/by-uuid/${gid}/leave`, { method: 'POST' });
         showToast('已退出群聊');
+        hideGroupMembers();
         await loadGroups();
-        renderGroupList();
+        renderGroupsContent();
         renderChatList();
         document.querySelectorAll('.content-page').forEach(p => p.classList.add('hidden'));
         document.getElementById('welcome-page')?.classList.remove('hidden');
     } catch (error) {
         showToast('退出失败: ' + error.message, 'error');
+    }
+}
+
+async function handleRemoveMember(contactId, memberPortal) {
+    if (!confirm('确定要移除该成员吗？')) return;
+    
+    try {
+        const group = state.groups.find(g => g.group_id === currentGroupUUID);
+        if (group?.db_id) {
+            await apiRequest(`/groups/${group.db_id}/members/${contactId}`, { method: 'DELETE' });
+            showToast('已移除成员');
+        } else {
+            showToast('无法移除成员：群组信息不完整', 'error');
+        }
+        showGroupMembers();
+        await loadGroups();
+        renderGroupsContent();
+    } catch (error) {
+        showToast('移除失败: ' + error.message, 'error');
+    }
+}
+
+async function handleDismissGroup() {
+    if (!confirm('确定要解散该群吗？此操作不可恢复！')) return;
+    
+    try {
+        const group = state.groups.find(g => g.group_id === currentGroupUUID);
+        if (group?.db_id) {
+            await apiRequest(`/groups/${group.db_id}`, { method: 'DELETE' });
+            showToast('已解散群聊');
+        } else {
+            showToast('无法解散群组：群组信息不完整', 'error');
+        }
+        hideGroupMembers();
+        await loadGroups();
+        renderGroupsContent();
+        renderChatList();
+        document.querySelectorAll('.content-page').forEach(p => p.classList.add('hidden'));
+        document.getElementById('welcome-page')?.classList.remove('hidden');
+    } catch (error) {
+        showToast('解散失败: ' + error.message, 'error');
     }
 }
 
