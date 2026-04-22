@@ -671,7 +671,8 @@ async function handleLeaveGroup(groupId) {
 function connectWebSocket() {
     if (!state.user) return;
     
-    const wsUrl = `ws://${window.location.host}/ws?token=${state.user.id}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws?token=${state.user.id}`;
     state.ws = new WebSocket(wsUrl);
     
     state.ws.onopen = () => {
