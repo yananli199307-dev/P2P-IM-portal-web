@@ -153,19 +153,10 @@
                     <div class="list-header">
                         <h3>通讯录</h3>
                     </div>
-                    <div class="list-type-tabs">
-                        <button class="tab-btn active" data-type="contacts">联系人</button>
-                        <button class="tab-btn" data-type="groups">群组</button>
-                        <button class="tab-btn" data-type="requests">新请求</button>
-                    </div>
-                    <div id="contact-list" class="list-items">
-                        <!-- 联系人列表 -->
-                    </div>
-                    <div id="group-list" class="list-items hidden">
-                        <!-- 群组列表 -->
-                    </div>
-                    <div id="request-list" class="list-items hidden">
-                        <!-- 请求列表 -->
+                    <div class="contact-nav-tabs">
+                        <button class="contact-tab active" data-type="contacts">联系人</button>
+                        <button class="contact-tab" data-type="groups">群组</button>
+                        <button class="contact-tab" data-type="requests">新请求</button>
                     </div>
                 </div>
                 
@@ -252,6 +243,48 @@
                     <div class="chat-input-area">
                         <input type="text" id="group-message-input" class="message-input" placeholder="输入群消息...">
                         <button id="send-group-btn" class="btn btn-primary">发送</button>
+                    </div>
+                </div>
+
+                <!-- 联系人内容 -->
+                <div id="contacts-page" class="content-page hidden">
+                    <div class="chat-header">
+                        <div class="chat-user-info">
+                            <span id="contacts-title">联系人</span>
+                        </div>
+                        <div class="chat-actions">
+                            <button id="add-contact-btn" class="btn btn-small btn-primary">添加</button>
+                        </div>
+                    </div>
+                    <div id="contacts-content" class="chat-messages">
+                        <div class="empty">暂无联系人</div>
+                    </div>
+                </div>
+
+                <!-- 群组列表内容 -->
+                <div id="groups-page" class="content-page hidden">
+                    <div class="chat-header">
+                        <div class="chat-user-info">
+                            <span id="groups-title">群组</span>
+                        </div>
+                        <div class="chat-actions">
+                            <button id="create-group-btn" class="btn btn-small btn-primary">创建群组</button>
+                        </div>
+                    </div>
+                    <div id="groups-content" class="chat-messages">
+                        <div class="empty">暂无群组</div>
+                    </div>
+                </div>
+
+                <!-- 新请求内容 -->
+                <div id="requests-page" class="content-page hidden">
+                    <div class="chat-header">
+                        <div class="chat-user-info">
+                            <span id="requests-title">新请求</span>
+                        </div>
+                    </div>
+                    <div id="requests-content" class="chat-messages">
+                        <div class="empty">暂无请求</div>
                     </div>
                 </div>
             </div>

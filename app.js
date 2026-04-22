@@ -79,9 +79,14 @@ function bindEvents() {
         item.addEventListener('click', () => switchTab(item.dataset.tab));
     });
     
-    // 列表类型切换
+    // 列表类型切换（消息部分）
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchListType(btn));
+    });
+    
+    // 通讯录 tab 切换
+    document.querySelectorAll('.contact-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchContactTab(tab.dataset.type));
     });
     
     // 设置项
@@ -171,10 +176,133 @@ function switchTab(tab) {
         section.classList.toggle('hidden', !section.id.startsWith(`list-${tab}`));
     });
     
-    // 显示内容区欢迎页
-    if (tab !== 'messages') {
-        document.querySelectorAll('.content-page').forEach(p => p.classList.add('hidden'));
+    // 隐藏所有内容页
+    document.querySelectorAll('.content-page').forEach(p => p.classList.add('hidden'));
+    
+    if (tab === 'contacts') {
+        // 通讯录默认显示联系人列表
+        switchContactTab('contacts');
+    } else if (tab === 'settings') {
+        // 设置显示欢迎页
         document.getElementById('welcome-page')?.classList.remove('hidden');
+    } else if (tab === 'messages') {
+        // 消息默认显示欢迎页
+        document.getElementById('welcome-page')?.classList.remove('hidden');
+    } else {
+        document.getElementById('welcome-page')?.classList.remove('hidden');
+    }
+}
+
+function switchContactTab(type) {
+    // 更新 tab 状态
+    document.querySelectorAll('.contact-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.type === type);
+    });
+    
+    // 隐藏所有内容页
+    document.querySelectorAll('.content-page').forEach(p => p.classList.add('hidden'));
+    
+    if (type === 'contacts') {
+        document.getElementById('contacts-page')?.classList.remove('hidden');
+        renderContactsContent();
+    } else if (type === 'groups') {
+        document.getElementById('groups-page')?.classList.remove('hidden');
+        renderGroupsContent();
+    } else if (type === 'requests') {
+        document.getElementById('requests-page')?.classList.remove('hidden');
+        loadRequests();
+    }
+}
+
+function renderContactsContent() {
+    const container = document.getElementById('contacts-content');
+    if (!container) return;
+    
+    if (state.contacts.length === 0) {
+        container.innerHTML = '<div class="empty">暂无联系人<br><button class="btn btn-small btn-primary" onclick="showAddContactModal()">添加联系人</button></div>';
+        return;
+    }
+    
+    container.innerHTML = state.contacts.map(contact => `
+        <div class="contact-list-item" onclick="openChat('private', '${contact.portal_url}', '${(contact.display_name || '未知').replace(/'/g, "\\'")}')">
+            <div class="avatar">${(contact.display_name || '?')[0].toUpperCase()}</div>
+            <div class="info">
+                <div class="name">${escapeHtml(contact.display_name || '未知')}</div>
+                <div class="portal">${contact.portal_url || ''}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderGroupsContent() {
+    const container = document.getElementById('groups-content');
+    if (!container) return;
+    
+    if (state.groups.length === 0) {
+        container.innerHTML = '<div class="empty">暂无群组<br><button class="btn btn-small btn-primary" onclick="showCreateGroupModal()">创建群组</button></div>';
+        return;
+    }
+    
+    container.innerHTML = state.groups.map(group => `
+        <div class="contact-list-item" onclick="openChat('group', '${group.group_id}', '${(group.name || '群组').replace(/'/g, "\\'")}')">
+            <div class="avatar">${(group.name || '群')[0].toUpperCase()}</div>
+            <div class="info">
+                <div class="name">${escapeHtml(group.name || '群组')}</div>
+                <div class="portal">${group.member_count || 0} 人</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadRequests() {
+    const container = document.getElementById('requests-content');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading">加载中</div>';
+    
+    try {
+        const data = await apiRequest('/contact-requests');
+        const requests = data.requests || [];
+        
+        if (requests.length === 0) {
+            container.innerHTML = '<div class="empty">暂无请求</div>';
+            return;
+        }
+        
+        container.innerHTML = requests.map(req => {
+            const statusClass = req.status === 'accepted' ? 'accepted' : req.status === 'rejected' ? 'rejected' : 'pending';
+            const statusText = req.status === 'accepted' ? '已接受' : req.status === 'rejected' ? '已拒绝' : '未处理';
+            
+            return `
+                <div class="request-item">
+                    <div class="info">
+                        <div class="name">${escapeHtml(req.your_name || '未知')}</div>
+                        <div class="portal">${req.requester_portal || req.your_portal || ''}</div>
+                    </div>
+                    <span class="status ${statusClass}">${statusText}</span>
+                    ${req.status === 'pending' ? `
+                        <div class="actions">
+                            <button class="btn btn-small btn-primary" onclick="handleRequestAction(${req.id}, 'accept')">接受</button>
+                            <button class="btn btn-small btn-danger" onclick="handleRequestAction(${req.id}, 'reject')">拒绝</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        container.innerHTML = '<div class="empty">加载失败</div>';
+    }
+}
+
+async function handleRequestAction(requestId, action) {
+    try {
+        await apiRequest(`/contact-requests/${requestId}/${action}`, { method: 'POST' });
+        showToast(action === 'accept' ? '已接受' : '已拒绝');
+        loadRequests();
+        await loadContacts();
+        renderChatList();
+    } catch (error) {
+        showToast('操作失败: ' + error.message, 'error');
     }
 }
 

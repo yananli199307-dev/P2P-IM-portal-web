@@ -291,6 +291,119 @@ h2 {
     color: white;
 }
 
+/* 通讯录垂直标签 */
+.contact-nav-tabs {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 5px;
+    border-bottom: 1px solid var(--border);
+}
+
+.contact-tab {
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: var(--radius);
+    text-align: left;
+    transition: all 0.2s;
+}
+
+.contact-tab:hover {
+    background: var(--bg);
+}
+
+.contact-tab.active {
+    background: rgba(108, 99, 255, 0.1);
+    color: var(--primary);
+    font-weight: 500;
+}
+
+/* 联系人/群组/请求内容页 */
+.contact-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.contact-list-item:hover {
+    background: var(--bg);
+}
+
+.contact-list-item .avatar {
+    flex-shrink: 0;
+}
+
+.contact-list-item .info {
+    flex: 1;
+}
+
+.contact-list-item .name {
+    font-weight: 500;
+    font-size: 15px;
+}
+
+.contact-list-item .portal {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* 请求状态 */
+.request-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+.request-item .info {
+    flex: 1;
+}
+
+.request-item .name {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.request-item .portal {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.request-item .status {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.request-item .status.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.request-item .status.accepted {
+    background: #d4edda;
+    color: #155724;
+}
+
+.request-item .status.rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.request-item .actions {
+    display: flex;
+    gap: 8px;
+}
+
 .list-items {
     flex: 1;
     overflow-y: auto;
