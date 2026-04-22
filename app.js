@@ -522,7 +522,7 @@ async function loadPrivateMessages(portal) {
     container.innerHTML = '<div class="loading">加载中</div>';
     
     try {
-        const messages = await apiRequest(`/messages/${encodeURIComponent(portal)}`);
+        const messages = await apiRequest(`/messages/portal/${encodeURIComponent(portal)}`);
         if (messages.length === 0) {
             container.innerHTML = '<div class="empty">暂无消息<br>发送消息开始聊天吧！</div>';
             return;
@@ -603,7 +603,7 @@ async function sendMessage() {
     if (!portal) return;
     
     try {
-        await apiRequest(`/messages/${encodeURIComponent(portal)}`, {
+        await apiRequest(`/messages/portal/${encodeURIComponent(portal)}`, {
             method: 'POST',
             body: { content }
         });
