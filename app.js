@@ -93,12 +93,25 @@ function bindEvents() {
     document.getElementById('show-share-link')?.addEventListener('click', showShareModal);
     document.getElementById('logout-btn')?.addEventListener('click', logout);
     
-    // 分享弹窗
-    document.getElementById('copy-url-btn')?.addEventListener('click', copyShareUrl);
-    document.querySelector('#share-modal .modal-close, #share-modal .modal-cancel')?.addEventListener('click', () => hideModal('share-modal'));
+    // 设置列表项点击
+    document.querySelectorAll('.settings-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const action = item.dataset.action;
+            if (action === 'password') {
+                showSettingsPanel('password');
+            } else if (action === 'share') {
+                showSettingsPanel('share');
+            } else if (action === 'logout') {
+                logout();
+            }
+        });
+    });
     
     // 修改密码
     document.getElementById('change-password-btn')?.addEventListener('click', handleChangePassword);
+    
+    // 复制链接
+    document.getElementById('copy-url-btn')?.addEventListener('click', copyShareUrl);
     
     // 添加联系人弹窗
     document.getElementById('add-contact-btn')?.addEventListener('click', showAddContactModal);
@@ -217,6 +230,21 @@ function switchContactTab(type) {
     } else if (type === 'requests') {
         document.getElementById('requests-page')?.classList.remove('hidden');
         loadRequests();
+    }
+}
+
+function showSettingsPanel(type) {
+    // 隐藏所有设置面板
+    document.querySelectorAll('.settings-panel').forEach(p => p.classList.add('hidden'));
+    
+    // 显示对应面板
+    if (type === 'password') {
+        document.getElementById('settings-password-panel')?.classList.remove('hidden');
+    } else if (type === 'share') {
+        // 设置分享链接
+        const url = `${state.portalUrl}?action=apply&portal=${encodeURIComponent(state.portalUrl)}`;
+        document.getElementById('share-url-input').value = url;
+        document.getElementById('settings-share-panel')?.classList.remove('hidden');
     }
 }
 
@@ -979,9 +1007,11 @@ function formatTime(dateStr) {
 
 function copyShareUrl() {
     const input = document.getElementById('share-url-input');
-    navigator.clipboard.writeText(input.value).then(() => {
-        showToast('链接已复制');
-    });
+    if (input) {
+        navigator.clipboard.writeText(input.value).then(() => {
+            showToast('链接已复制');
+        });
+    }
 }
 
 function showToast(message, type = 'success') {

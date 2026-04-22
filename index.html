@@ -166,13 +166,19 @@
                         <h3>设置</h3>
                     </div>
                     <div class="list-items">
-                        <div class="settings-item" id="show-share-link">
+                        <div class="settings-item" data-action="password">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6z"/>
+                            </svg>
+                            修改密码
+                        </div>
+                        <div class="settings-item" data-action="share">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
                             </svg>
                             分享我的链接
                         </div>
-                        <div class="settings-item" id="logout-btn">
+                        <div class="settings-item" data-action="logout">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
                             </svg>
@@ -197,27 +203,44 @@
 
                 <!-- 设置内容页 -->
                 <div id="settings-page" class="content-page hidden">
-                    <div class="chat-header">
-                        <div class="chat-user-info">
-                            <span id="settings-title">设置</span>
+                    <div id="settings-password-panel" class="settings-panel hidden">
+                        <div class="chat-header">
+                            <div class="chat-user-info">
+                                <span>修改密码</span>
+                            </div>
+                        </div>
+                        <div style="padding: 20px;">
+                            <div style="background: var(--white); border-radius: var(--radius); padding: 20px;">
+                                <div class="input-group">
+                                    <label style="display: block; margin-bottom: 8px; font-size: 14px;">当前密码</label>
+                                    <input type="password" id="old-password" placeholder="请输入当前密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                                </div>
+                                <div class="input-group" style="margin-top: 15px;">
+                                    <label style="display: block; margin-bottom: 8px; font-size: 14px;">新密码</label>
+                                    <input type="password" id="new-password" placeholder="请输入新密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                                </div>
+                                <div class="input-group" style="margin-top: 15px;">
+                                    <label style="display: block; margin-bottom: 8px; font-size: 14px;">确认新密码</label>
+                                    <input type="password" id="confirm-password" placeholder="请再次输入新密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                                </div>
+                                <button id="change-password-btn" class="btn btn-primary" style="margin-top: 20px; width: 100%;">确认修改</button>
+                            </div>
                         </div>
                     </div>
-                    <div style="padding: 20px;">
-                        <div style="background: var(--white); border-radius: var(--radius); padding: 20px; margin-bottom: 20px;">
-                            <h4 style="margin-bottom: 15px;">修改密码</h4>
-                            <div class="input-group">
-                                <label style="display: block; margin-bottom: 8px; font-size: 14px;">当前密码</label>
-                                <input type="password" id="old-password" placeholder="请输入当前密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                    <div id="settings-share-panel" class="settings-panel hidden">
+                        <div class="chat-header">
+                            <div class="chat-user-info">
+                                <span>分享我的链接</span>
                             </div>
-                            <div class="input-group" style="margin-top: 15px;">
-                                <label style="display: block; margin-bottom: 8px; font-size: 14px;">新密码</label>
-                                <input type="password" id="new-password" placeholder="请输入新密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                        </div>
+                        <div style="padding: 20px;">
+                            <div style="background: var(--white); border-radius: var(--radius); padding: 20px;">
+                                <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;">分享你的 Portal 地址给别人，他们可以直接申请添加你为联系人：</p>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="share-url-input" readonly style="flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                                    <button id="copy-url-btn" class="btn btn-primary">复制</button>
+                                </div>
                             </div>
-                            <div class="input-group" style="margin-top: 15px;">
-                                <label style="display: block; margin-bottom: 8px; font-size: 14px;">确认新密码</label>
-                                <input type="password" id="confirm-password" placeholder="请再次输入新密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
-                            </div>
-                            <button id="change-password-btn" class="btn btn-primary" style="margin-top: 20px; width: 100%;">确认修改</button>
                         </div>
                     </div>
                 </div>
