@@ -310,49 +310,52 @@
 
     <!-- 添加联系人弹窗 -->
     <div id="add-contact-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
                 <h3>添加联系人</h3>
                 <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
-                <p>输入对方的 Portal 地址发送申请：</p>
-                <div class="add-contact-form">
-                    <input type="url" id="add-contact-url" placeholder="https://example.com">
-                    <button id="add-contact-btn" class="btn btn-primary btn-small">发送申请</button>
+                <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;">输入对方的 Portal 地址发送申请：</p>
+                <div class="input-group">
+                    <input type="url" id="add-contact-url" placeholder="https://example.com" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
                 </div>
-                <div id="add-contact-message"></div>
+                <div id="add-contact-message" style="margin-top: 10px; font-size: 13px;"></div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary modal-cancel">取消</button>
+                <button type="button" id="do-add-contact-btn" class="btn btn-primary">发送申请</button>
             </div>
         </div>
     </div>
 
     <!-- 创建群组弹窗 -->
     <div id="create-group-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 450px;">
             <div class="modal-header">
                 <h3>创建群组</h3>
                 <button class="modal-close">&times;</button>
             </div>
-            <form id="create-group-form">
+            <div class="modal-body">
                 <div class="input-group">
-                    <label>群组名称</label>
-                    <input type="text" id="group-name" placeholder="我的群组" required>
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-secondary);">群组名称</label>
+                    <input type="text" id="group-name" placeholder="我的群组" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
                 </div>
-                <div class="input-group">
-                    <label>群组描述（可选）</label>
-                    <input type="text" id="group-description" placeholder="描述">
+                <div class="input-group" style="margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-secondary);">群组描述（可选）</label>
+                    <input type="text" id="group-description" placeholder="描述" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
                 </div>
-                <div class="input-group">
-                    <label>选择初始成员</label>
-                    <div id="group-members-select" class="members-select">
+                <div class="input-group" style="margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-secondary);">选择初始成员</label>
+                    <div id="group-members-select" class="members-select" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px;">
                         <!-- 联系人列表 -->
                     </div>
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary modal-cancel">取消</button>
-                    <button type="submit" class="btn btn-primary">创建</button>
-                </div>
-            </form>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary modal-cancel">取消</button>
+                <button type="button" id="do-create-group-btn" class="btn btn-primary">创建</button>
+            </div>
         </div>
     </div>
 

@@ -99,6 +99,8 @@ function bindEvents() {
     
     // 添加联系人弹窗
     document.getElementById('add-contact-btn')?.addEventListener('click', showAddContactModal);
+    document.getElementById('do-add-contact-btn')?.addEventListener('click', handleAddContactSubmit);
+    document.getElementById('do-create-group-btn')?.addEventListener('click', handleCreateGroupSubmit);
     document.getElementById('create-group-btn')?.addEventListener('click', showCreateGroupModal);
     document.querySelector('#add-contact-modal .modal-close, #add-contact-modal .modal-cancel')?.addEventListener('click', () => hideModal('add-contact-modal'));
     
@@ -833,8 +835,12 @@ async function handleAddContact() {
     }
 }
 
+async function handleAddContactSubmit() {
+    await handleAddContact();
+}
+
 async function handleCreateGroup(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     
     const name = document.getElementById('group-name').value;
     const description = document.getElementById('group-description').value;
@@ -848,13 +854,17 @@ async function handleCreateGroup(e) {
         });
         showToast('群组创建成功');
         hideModal('create-group-modal');
-        document.getElementById('create-group-form').reset();
+        document.getElementById('create-group-form')?.reset();
         await loadGroups();
-        renderGroupList();
+        renderGroupsContent();
         renderChatList();
     } catch (error) {
         showToast('创建失败: ' + error.message, 'error');
     }
+}
+
+async function handleCreateGroupSubmit() {
+    await handleCreateGroup();
 }
 
 async function handleLeaveGroup(groupId) {
