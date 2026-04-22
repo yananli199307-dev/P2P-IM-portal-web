@@ -651,18 +651,24 @@ async function loadPrivateMessages(portal) {
     container.innerHTML = '<div class="loading">加载中</div>';
     
     try {
-        const messages = await apiRequest(`/messages/portal/${encodeURIComponent(portal)}`);
+        // 获取 contact_id
+        const contact = state.contacts.find(c => c.portal_url === portal);
+        if (!contact) {
+            container.innerHTML = '<div class="empty">未找到联系人</div>';
+            return;
+        }
+        
+        const messages = await apiRequest(`/messages/contact/${contact.id}`);
         if (messages.length === 0) {
             container.innerHTML = '<div class="empty">暂无消息<br>发送消息开始聊天吧！</div>';
             return;
         }
         
-        // 反转消息顺序，最新的在下面
-        messages.reverse();
+        // 消息已按时间升序排列（旧→新），新消息自然在最下面
         
         container.innerHTML = messages.map(msg => `
-            <div class="message ${msg.is_from_me ? 'sent' : 'received'}">
-                ${!msg.is_from_me ? `<div class="message-sender">${escapeHtml(msg.sender_name || '对方')}</div>` : ''}
+            <div class="message ${msg.is_from_owner ? 'sent' : 'received'}">
+                ${!msg.is_from_owner ? `<div class="message-sender">${escapeHtml(msg.sender_name || '对方')}</div>` : ''}
                 <div class="message-content" style="white-space: pre-wrap;">${escapeHtml(msg.content)}</div>
                 <div class="message-time">${formatTime(msg.created_at)}</div>
             </div>
@@ -738,9 +744,16 @@ async function sendMessage() {
     if (!portal) return;
     
     try {
-        await apiRequest(`/messages/portal/${encodeURIComponent(portal)}`, {
+        // 获取 contact_id
+        const contact = state.contacts.find(c => c.portal_url === portal);
+        if (!contact) {
+            showToast('未找到联系人', 'error');
+            return;
+        }
+        
+        await apiRequest('/messages', {
             method: 'POST',
-            body: { content }
+            body: { contact_id: contact.id, content }
         });
         input.value = '';
         loadPrivateMessages(portal);
@@ -928,7 +941,7 @@ function applyFormHandler(targetPortal) {
         const message = document.getElementById('apply-message').value;
         
         try {
-            await apiRequest('/contact-requests', {
+            await apiRequest('/contact-requests/apply', {
                 method: 'POST',
                 body: { target_portal: targetPortal, your_portal: portal, your_name: name, message }
             });
@@ -945,7 +958,7 @@ async function handleAddContact() {
     if (!url) return;
     
     try {
-        await apiRequest('/contact-requests', {
+        await apiRequest('/contact-requests/apply', {
             method: 'POST',
             body: { target_portal: url }
         });
@@ -1075,17 +1088,24 @@ function connectWebSocket() {
 }
 
 function handleWSMessage(data) {
+    console.log('[WS] Received:', JSON.stringify(data));
+    alert('WS收到: ' + JSON.stringify(data));
+    
     if (data.type === 'new_message') {
-        if (state.selectedChat?.id === data.portal_url) {
-            loadPrivateMessages(data.portal_url);
+        // 后端发送格式: {type: 'new_message', data: {portal_url, sender_name, ...}}
+        const msgData = data.data || data;
+        if (state.selectedChat?.id === msgData.portal_url) {
+            loadPrivateMessages(msgData.portal_url);
         }
-        showToast(`新消息 from ${data.sender_name}`);
+        showToast(`新消息 from ${msgData.sender_name || '未知'}`);
     } else if (data.type === 'group_message') {
         const groupId = data.data?.group_id;
+        const senderName = data.data?.sender_name || '成员';
+        console.log('[WS] Group message for group:', groupId, 'sender:', senderName);
         if (state.selectedChat?.id === groupId) {
             loadGroupMessages(groupId);
         }
-        showToast(`群消息 from ${data.data?.sender_name || '成员'}`);
+        showToast(`群消息 from ${senderName}`);
     }
 }
 
