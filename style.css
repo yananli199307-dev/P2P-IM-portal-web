@@ -596,11 +596,12 @@ h2 {
 }
 
 .message-input {
-    flex: 1;
+    flex: 10;
     padding: 10px 14px;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     font-size: 14px;
+    min-width: 0;
 }
 
 .message-input:focus {
@@ -609,8 +610,11 @@ h2 {
 }
 
 #send-btn, #send-group-btn {
-    padding: 10px 20px;
+    flex: 1;
+    padding: 10px 16px;
     font-size: 14px;
+    min-width: 0;
+    max-width: 80px;
 }
 
 /* 群成员列表 */
