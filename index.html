@@ -8,7 +8,7 @@
 </head>
 <body>
     <div id="app">
-        <!-- 初始化页面 -->
+        <!-- 初始化页面（首次使用） -->
         <div id="init-page" class="page hidden">
             <div class="login-container">
                 <div class="logo">
@@ -19,6 +19,7 @@
                 <h1>欢迎使用 Agent Portal</h1>
                 <p class="subtitle">首次使用，请设置管理员密码</p>
                 <p class="portal-url" id="init-portal-url"></p>
+                
                 <form id="init-form">
                     <div class="input-group">
                         <label>显示名称</label>
@@ -47,6 +48,7 @@
                 </div>
                 <h1>Agent Portal</h1>
                 <p class="subtitle">P2P 安全通讯</p>
+                
                 <form id="login-form">
                     <div class="input-group">
                         <label>你的 Portal 地址</label>
@@ -58,6 +60,7 @@
                     </div>
                     <button type="submit" class="btn btn-primary">登录</button>
                 </form>
+                
                 <div class="login-tips">
                     <p>💡 提示：Portal 地址就是你的身份标识</p>
                     <p>例如：https://agentp2p.cn</p>
@@ -65,7 +68,7 @@
             </div>
         </div>
 
-        <!-- 匿名申请页面 -->
+        <!-- 匿名申请页面（无需登录） -->
         <div id="apply-page" class="page hidden">
             <div class="login-container">
                 <div class="logo">
@@ -75,6 +78,7 @@
                 </div>
                 <h2>申请添加联系人</h2>
                 <p class="subtitle">你正在申请添加 <span id="target-portal-display"></span> 为联系人</p>
+                
                 <form id="apply-form">
                     <div class="input-group">
                         <label>你的显示名称</label>
@@ -90,34 +94,43 @@
                     </div>
                     <button type="submit" class="btn btn-primary">提交申请</button>
                 </form>
+                
                 <p class="switch-form">
                     <a href="#" id="apply-to-login">已有账号？去登录</a>
                 </p>
             </div>
         </div>
 
-        <!-- 主页面 - 三列布局 -->
+        <!-- 主页面 -->
         <div id="main-page" class="page hidden">
-            <!-- 第一列：侧边栏 -->
+            <!-- 侧边栏 -->
             <aside class="sidebar">
                 <div class="sidebar-header">
-                    <h2>My Portal</h2>
+                    <h2>Agent Portal</h2>
+                    <div id="connection-status" class="status disconnected"></div>
                 </div>
                 
                 <nav class="sidebar-nav">
-                    <a href="#" class="nav-item active" data-tab="messages">
+                    <a href="#" class="nav-item active" data-page="contacts">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+                            <path d="M20 0H4v2h16V0zM4 24h16v-2H4v2zM20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-6 12H6v-2h8v2zm4-4H6v-2h12v2zm0-4H6V6h12v2z"/>
                         </svg>
-                        消息
+                        联系人
                     </a>
-                    <a href="#" class="nav-item" data-tab="contacts">
+                    <a href="#" class="nav-item" data-page="groups">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20 0H4v2h16V0zm0 24h16v-2H4v2zm6-11H6v-2h8v2zm4-4H6V7h12v2z"/>
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
                         </svg>
-                        通讯录
+                        群组
                     </a>
-                    <a href="#" class="nav-item" data-tab="settings">
+                    <a href="#" class="nav-item" data-page="requests">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
+                        </svg>
+                        新的请求
+                        <span id="request-badge" class="badge hidden">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="settings">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L3.16 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
                         </svg>
@@ -133,277 +146,229 @@
                             <span id="user-portal" class="user-portal"></span>
                         </div>
                     </div>
+                    <button id="logout-btn" class="btn-icon" title="退出登录">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                        </svg>
+                    </button>
                 </div>
             </aside>
 
-            <!-- 第二列：列表 -->
-            <div class="list-panel">
-                <!-- 消息列表 -->
-                <div id="list-messages" class="list-section active">
-                    <div class="list-header">
-                        <h3>消息</h3>
-                    </div>
-                    <div id="chat-list" class="list-items">
-                        <!-- 聊天列表 -->
-                    </div>
-                </div>
-                
-                <!-- 通讯录列表 -->
-                <div id="list-contacts" class="list-section hidden">
-                    <div class="list-header">
-                        <h3>通讯录</h3>
-                    </div>
-                    <div class="contact-nav-tabs">
-                        <button class="contact-tab active" data-type="contacts">联系人</button>
-                        <button class="contact-tab" data-type="groups">群组</button>
-                        <button class="contact-tab" data-type="requests">新请求</button>
-                    </div>
-                </div>
-                
-                <!-- 设置列表 -->
-                <div id="list-settings" class="list-section hidden">
-                    <div class="list-header">
-                        <h3>设置</h3>
-                    </div>
-                    <div class="list-items">
-                        <div class="settings-item" data-action="password">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6z"/>
-                            </svg>
-                            修改密码
-                        </div>
-                        <div class="settings-item" data-action="share">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <!-- 主内容区 -->
+            <main class="main-content">
+                <!-- 联系人列表页 -->
+                <div id="contacts-page" class="content-page">
+                    <div class="page-header">
+                        <h2>联系人</h2>
+                        <button id="share-btn" class="btn btn-secondary btn-small">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
                             </svg>
                             分享我的链接
-                        </div>
-                        <div class="settings-item" data-action="logout">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-                            </svg>
-                            退出登录
+                        </button>
+                    </div>
+                    <div class="share-box" id="share-box">
+                        <p>分享你的 Portal 地址给别人，他们可以直接申请添加你为联系人：</p>
+                        <div class="share-url">
+                            <input type="text" id="share-url-input" readonly>
+                            <button id="copy-url-btn" class="btn btn-small">复制</button>
                         </div>
                     </div>
+                    <div class="add-contact-box" id="add-contact-box">
+                        <h3>添加联系人</h3>
+                        <p>输入对方的 Portal 地址发送申请：</p>
+                        <div class="add-contact-form">
+                            <input type="url" id="add-contact-url" placeholder="https://example.com">
+                            <button id="add-contact-btn" class="btn btn-primary btn-small">发送申请</button>
+                        </div>
+                        <div id="add-contact-message" class="add-contact-message"></div>
+                    </div>
+                    <div id="contacts-list" class="contacts-list">
+                        <!-- 联系人列表将在这里渲染 -->
+                    </div>
+                </div>
+
+                <!-- 群组页 -->
+                <div id="groups-page" class="content-page hidden">
+                    <div class="page-header">
+                        <h2>群组</h2>
+                        <button id="create-group-btn" class="btn btn-primary btn-small">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                            创建群组
+                        </button>
+                    </div>
+                    <div id="groups-list" class="contacts-list">
+                        <!-- 群组列表将在这里渲染 -->
+                    </div>
+                </div>
+
+                <!-- 请求列表页 -->
+                <div id="requests-page" class="content-page hidden">
+                    <div class="page-header">
+                        <h2>联系人请求</h2>
+                    </div>
+                    <div id="requests-list" class="requests-list">
+                        <!-- 请求列表将在这里渲染 -->
+                    </div>
+                </div>
+
+                <!-- 设置页 -->
+                <div id="settings-page" class="content-page hidden">
+                    <div class="page-header">
+                        <h2>设置</h2>
+                    </div>
+                    <div class="settings-list">
+                        <div class="setting-item">
+                            <div>
+                                <div>修改密码</div>
+                                <div class="setting-desc">定期更换密码可以提高安全性</div>
+                            </div>
+                            <button id="change-password-btn" class="btn btn-small">修改</button>
+                        </div>
+                        <div class="setting-item">
+                            <span>消息通知</span>
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="setting-item danger" id="logout-setting">
+                            <span>退出登录</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 聊天窗口 -->
+            <div id="chat-panel" class="chat-panel hidden">
+                <div class="chat-header">
+                    <button id="close-chat" class="btn-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                        </svg>
+                    </button>
+                    <div class="chat-title">
+                        <h3 id="chat-contact-name">联系人</h3>
+                    </div>
+                </div>
+                <div id="chat-messages" class="chat-messages">
+                    <!-- 消息将在这里渲染 -->
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="message-input" placeholder="输入消息...">
+                    <button id="send-btn" class="btn btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
-
-            <!-- 第三列：内容区 -->
-            <div class="content-panel">
-                <!-- 欢迎页 -->
-                <div id="welcome-page" class="content-page active">
-                    <div class="welcome">
-                        <svg width="80" height="80" viewBox="0 0 24 24" fill="#6C63FF">
-                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+            
+            <!-- 群聊面板 -->
+            <div id="group-chat-panel" class="chat-panel hidden">
+                <div class="chat-header">
+                    <button id="close-group-chat" class="btn-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
                         </svg>
-                        <h2>欢迎使用 Agent Portal</h2>
-                        <p>选择左侧的聊天对象开始对话</p>
+                    </button>
+                    <div class="chat-title">
+                        <h3 id="group-chat-name">群组</h3>
+                    </div>
+                    <button id="invite-member-btn" class="btn btn-small btn-secondary">
+                        +邀请
+                    </button>
+                    <button id="show-group-members-btn" class="btn btn-small btn-secondary">
+                        👥 成员
+                    </button>
+                    <button id="leave-group-btn" class="btn btn-small btn-danger hidden">
+                        退出群聊
+                    </button>
+                    <button id="dissolve-group-btn" class="btn btn-small btn-danger hidden">
+                        解散群
+                    </button>
+                </div>
+                <div id="group-members-panel" class="group-members-panel hidden">
+                    <div class="group-members-header">
+                        <h4>群成员</h4>
+                        <button id="close-group-members-btn" class="btn-icon">&times;</button>
+                    </div>
+                    <div id="group-members-list" class="group-members-list">
+                        <!-- 成员列表 -->
                     </div>
                 </div>
-
-                <!-- 设置内容页 -->
-                <div id="settings-page" class="content-page hidden">
-                    <div id="settings-password-panel" class="settings-panel hidden">
-                        <div class="chat-header">
-                            <div class="chat-user-info">
-                                <span>修改密码</span>
-                            </div>
-                        </div>
-                        <div style="padding: 20px;">
-                            <div style="background: var(--white); border-radius: var(--radius); padding: 20px;">
-                                <div class="input-group">
-                                    <label style="display: block; margin-bottom: 8px; font-size: 14px;">当前密码</label>
-                                    <input type="password" id="old-password" placeholder="请输入当前密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
-                                </div>
-                                <div class="input-group" style="margin-top: 15px;">
-                                    <label style="display: block; margin-bottom: 8px; font-size: 14px;">新密码</label>
-                                    <input type="password" id="new-password" placeholder="请输入新密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
-                                </div>
-                                <div class="input-group" style="margin-top: 15px;">
-                                    <label style="display: block; margin-bottom: 8px; font-size: 14px;">确认新密码</label>
-                                    <input type="password" id="confirm-password" placeholder="请再次输入新密码" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
-                                </div>
-                                <button id="change-password-btn" class="btn btn-primary" style="margin-top: 20px; width: 100%;">确认修改</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="settings-share-panel" class="settings-panel hidden">
-                        <div class="chat-header">
-                            <div class="chat-user-info">
-                                <span>分享我的链接</span>
-                            </div>
-                        </div>
-                        <div style="padding: 20px;">
-                            <div style="background: var(--white); border-radius: var(--radius); padding: 20px;">
-                                <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;">分享你的 Portal 地址给别人，他们可以直接申请添加你为联系人：</p>
-                                <div style="display: flex; gap: 10px;">
-                                    <input type="text" id="share-url-input" readonly style="flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
-                                    <button id="copy-url-btn" class="btn btn-primary">复制</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div id="group-chat-messages" class="chat-messages">
+                    <div class="empty">暂无消息</div>
                 </div>
-
-                <!-- 私聊内容 -->
-                <div id="chat-page" class="content-page hidden">
-                    <div class="chat-header">
-                        <div class="chat-user-info">
-                            <div class="avatar" id="chat-avatar"></div>
-                            <div class="chat-user-details">
-                                <span id="chat-name">用户</span>
-                                <span id="chat-portal" class="user-portal"></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="chat-messages" class="chat-messages">
-                        <div class="empty">暂无消息</div>
-                    </div>
-                    <div class="chat-input-area">
-                        <textarea id="message-input" class="message-input" placeholder="输入消息..." rows="1"></textarea>
-                        <button id="send-btn" class="btn btn-primary">发送</button>
-                    </div>
-                </div>
-
-                <!-- 群聊内容 -->
-                <div id="group-chat-page" class="content-page hidden">
-                    <div class="chat-header">
-                        <div class="chat-user-info">
-                            <div class="avatar" id="group-chat-avatar"></div>
-                            <div class="chat-user-details">
-                                <span id="group-chat-name">群组</span>
-                                <span id="group-member-count"></span>
-                            </div>
-                        </div>
-                        <div class="chat-actions">
-                            <button id="group-members-btn" class="btn btn-small btn-secondary">👥 成员</button>
-                            <button id="group-leave-btn" class="btn btn-small btn-danger hidden">退出群聊</button>
-                        </div>
-                    </div>
-                    <div class="group-members-panel hidden">
-                        <div class="group-members-header">
-                            <h4>群成员</h4>
-                            <button id="close-group-members" class="btn-icon">&times;</button>
-                        </div>
-                        <div id="group-members-list"></div>
-                    </div>
-                    <div id="group-chat-messages" class="chat-messages">
-                        <div class="empty">暂无群消息</div>
-                    </div>
-                    <div class="chat-input-area">
-                        <textarea id="group-message-input" class="message-input" placeholder="输入群消息..." rows="1"></textarea>
-                        <button id="send-group-btn" class="btn btn-primary">发送</button>
-                    </div>
-                </div>
-
-                <!-- 联系人内容 -->
-                <div id="contacts-page" class="content-page hidden">
-                    <div class="chat-header">
-                        <div class="chat-user-info">
-                            <span id="contacts-title">联系人</span>
-                        </div>
-                        <div class="chat-actions">
-                            <button id="add-contact-btn" class="btn btn-small btn-primary">添加</button>
-                        </div>
-                    </div>
-                    <div id="contacts-content" class="chat-messages">
-                        <div class="empty">暂无联系人</div>
-                    </div>
-                </div>
-
-                <!-- 群组列表内容 -->
-                <div id="groups-page" class="content-page hidden">
-                    <div class="chat-header">
-                        <div class="chat-user-info">
-                            <span id="groups-title">群组</span>
-                        </div>
-                        <div class="chat-actions">
-                            <button id="create-group-btn" class="btn btn-small btn-primary">创建群组</button>
-                        </div>
-                    </div>
-                    <div id="groups-content" class="chat-messages">
-                        <div class="empty">暂无群组</div>
-                    </div>
-                </div>
-
-                <!-- 新请求内容 -->
-                <div id="requests-page" class="content-page hidden">
-                    <div class="chat-header">
-                        <div class="chat-user-info">
-                            <span id="requests-title">新请求</span>
-                        </div>
-                    </div>
-                    <div id="requests-content" class="chat-messages">
-                        <div class="empty">暂无请求</div>
-                    </div>
+                <div class="chat-input-area">
+                    <input type="text" id="group-message-input" placeholder="输入消息...">
+                    <button id="send-group-btn" class="btn btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 分享链接弹窗 -->
-    <div id="share-modal" class="modal hidden">
+    <!-- 修改密码弹窗 -->
+    <div id="change-password-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>分享我的链接</h3>
+                <h3>修改密码</h3>
                 <button class="modal-close">&times;</button>
             </div>
-            <div class="modal-body">
-                <p>分享你的 Portal 地址给别人，他们可以直接申请添加你为联系人：</p>
-                <div class="share-url">
-                    <input type="text" id="share-url-input" readonly>
-                    <button id="copy-url-btn" class="btn btn-small">复制</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 添加联系人弹窗 -->
-    <div id="add-contact-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 360px;">
-            <div class="modal-header">
-                <h3>添加联系人</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;">输入对方的 Portal 地址发送申请：</p>
+            <form id="change-password-form">
                 <div class="input-group">
-                    <input type="url" id="add-contact-url" placeholder="https://example.com" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                    <label>当前密码</label>
+                    <input type="password" id="old-password" required>
                 </div>
-                <div id="add-contact-message" style="margin-top: 10px; font-size: 13px;"></div>
-            </div>
-            <div class="modal-actions" style="justify-content: center;">
-                <button type="button" id="do-add-contact-btn" class="btn btn-primary btn-small" style="width: 33%;">发送申请</button>
-            </div>
+                <div class="input-group">
+                    <label>新密码</label>
+                    <input type="password" id="new-password" required minlength="6">
+                </div>
+                <div class="input-group">
+                    <label>确认新密码</label>
+                    <input type="password" id="confirm-new-password" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">取消</button>
+                    <button type="submit" class="btn btn-primary">确认修改</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- 创建群组弹窗 -->
     <div id="create-group-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content">
             <div class="modal-header">
                 <h3>创建群组</h3>
                 <button class="modal-close">&times;</button>
             </div>
-            <div class="modal-body">
+            <form id="create-group-form">
                 <div class="input-group">
-                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-secondary);">群组名称</label>
-                    <input type="text" id="group-name" placeholder="我的群组" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                    <label>群组名称</label>
+                    <input type="text" id="group-name" placeholder="输入群组名称" required>
                 </div>
-                <div class="input-group" style="margin-top: 15px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-secondary);">群组描述（可选）</label>
-                    <input type="text" id="group-description" placeholder="描述" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+                <div class="input-group">
+                    <label>群组描述</label>
+                    <input type="text" id="group-description" placeholder="可选">
                 </div>
-                <div class="input-group" style="margin-top: 15px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-secondary);">选择初始成员</label>
-                    <div id="group-members-select" class="members-select" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); padding: 10px;">
-                        <!-- 联系人列表 -->
+                <div class="input-group">
+                    <label>选择成员</label>
+                    <div id="group-members-select" class="members-select">
+                        <!-- 联系人列表将在这里渲染 -->
                     </div>
                 </div>
-            </div>
-            <div class="modal-actions" style="justify-content: center;">
-                <button type="button" id="do-create-group-btn" class="btn btn-primary btn-small" style="width: 33%;">创建</button>
-            </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">取消</button>
+                    <button type="submit" class="btn btn-primary">创建</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -418,7 +383,7 @@
                 <div class="input-group">
                     <label>选择联系人邀请</label>
                     <div id="invite-members-select" class="members-select">
-                        <!-- 联系人列表 -->
+                        <!-- 联系人列表将在这里渲染 -->
                     </div>
                 </div>
                 <div class="modal-actions">
@@ -428,6 +393,9 @@
             </form>
         </div>
     </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="toast hidden"></div>
 
     <script src="app.js"></script>
 </body>
