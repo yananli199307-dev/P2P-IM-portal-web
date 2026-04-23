@@ -635,10 +635,18 @@ async function sendMessage(content) {
             }
         });
         
-        // 不立即添加消息，避免 WebSocket 通知导致重复
-        // 改为重新加载消息（和群聊一致）
+        // 记录刚刚发送的消息 ID，避免 WebSocket 重复添加
+        state.recentSentMessageIds = state.recentSentMessageIds || new Set();
+        state.recentSentMessageIds.add(message.id);
+        // 5秒后清除记录
+        setTimeout(() => {
+            state.recentSentMessageIds?.delete(message.id);
+        }, 5000);
+        
+        state.messages.push(message);
+        renderMessages();
         elements.messageInput.value = '';
-        await loadMessages(state.selectedContact.id);
+        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
     } catch (error) {
         console.error('发送消息失败:', error);
     }
@@ -713,7 +721,9 @@ function handleWebSocketMessage(message) {
         if (data && data.contact_id === state.selectedContact?.id) {
             // 检查是否已存在，避免重复添加
             const exists = state.messages.some(m => m.id === data.id);
-            if (!exists) {
+            // 检查是否是刚刚自己发送的消息（避免 WebSocket 通知导致重复）
+            const isRecentSent = state.recentSentMessageIds?.has(data.id);
+            if (!exists && !isRecentSent) {
                 state.messages.push(data);
                 renderMessages();
                 // 如果正在聊天，自动标记为已读
