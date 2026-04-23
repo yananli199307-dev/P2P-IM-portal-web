@@ -635,10 +635,10 @@ async function sendMessage(content) {
             }
         });
         
-        state.messages.push(message);
-        renderMessages();
+        // 不立即添加消息，避免 WebSocket 通知导致重复
+        // 改为重新加载消息（和群聊一致）
         elements.messageInput.value = '';
-        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        await loadMessages(state.selectedContact.id);
     } catch (error) {
         console.error('发送消息失败:', error);
     }
