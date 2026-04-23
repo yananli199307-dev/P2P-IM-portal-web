@@ -568,22 +568,40 @@ async function markMessagesAsRead(contactId) {
 }
 
 function renderContacts() {
-    if (state.contacts.length === 0) {
-        elements.contactsList.innerHTML = '<div class="empty">暂无联系人<br>分享你的 Portal 地址让别人申请添加你</div>';
-        return;
-    }
-    
-    elements.contactsList.innerHTML = state.contacts.map(contact => `
-        <div class="contact-item" data-id="${contact.id}">
-            <div class="contact-avatar">${contact.display_name[0].toUpperCase()}</div>
+    // 添加 My Agent 固定入口
+    const myAgentHtml = `
+        <div class="contact-item my-agent" data-id="agent">
+            <div class="contact-avatar">🤖</div>
             <div class="contact-info">
-                <div class="contact-name">${escapeHtml(contact.display_name)}</div>
-                <div class="contact-url">${escapeHtml(contact.portal_url)}</div>
+                <div class="contact-name">My Agent</div>
+                <div class="contact-url">AI 助手</div>
             </div>
         </div>
-    `).join('');
+    `;
     
-    document.querySelectorAll('.contact-item').forEach(item => {
+    if (state.contacts.length === 0) {
+        elements.contactsList.innerHTML = myAgentHtml + '<div class="empty" style="margin-top: 20px;">暂无其他联系人<br>分享你的 Portal 地址让别人申请添加你</div>';
+    } else {
+        const contactsHtml = state.contacts.map(contact => `
+            <div class="contact-item" data-id="${contact.id}">
+                <div class="contact-avatar">${contact.display_name[0].toUpperCase()}</div>
+                <div class="contact-info">
+                    <div class="contact-name">${escapeHtml(contact.display_name)}</div>
+                    <div class="contact-url">${escapeHtml(contact.portal_url)}</div>
+                </div>
+            </div>
+        `).join('');
+        
+        elements.contactsList.innerHTML = myAgentHtml + contactsHtml;
+    }
+    
+    // My Agent 点击事件
+    document.querySelector('.contact-item.my-agent')?.addEventListener('click', () => {
+        openAgentChat();
+    });
+    
+    // 普通联系人点击事件
+    document.querySelectorAll('.contact-item:not(.my-agent)').forEach(item => {
         item.addEventListener('click', () => {
             const id = parseInt(item.dataset.id);
             const contact = state.contacts.find(c => c.id === id);
@@ -598,6 +616,7 @@ function renderContacts() {
 
 async function openChat(contact) {
     state.selectedContact = contact;
+    state.isAgentChat = false;
     elements.chatContactName.textContent = contact.display_name;
     elements.chatPanel.classList.remove('hidden');
     elements.chatMessages.innerHTML = '<div class="empty">暂无消息</div>';
@@ -605,6 +624,25 @@ async function openChat(contact) {
     await loadMessages(contact.id);
     // 标记消息为已读
     await markMessagesAsRead(contact.id);
+}
+
+// ========== My Agent 聊天 ==========
+
+function openAgentChat() {
+    state.selectedContact = { id: 'agent', display_name: 'My Agent' };
+    state.isAgentChat = true;
+    elements.chatContactName.textContent = '🤖 My Agent';
+    elements.chatPanel.classList.remove('hidden');
+    elements.chatMessages.innerHTML = '<div class="empty">我是你的 AI 助手，有什么可以帮你的吗？</div>';
+    elements.messageInput.focus();
+    // 加载历史 Agent 消息（如果有）
+    loadAgentMessages();
+}
+
+async function loadAgentMessages() {
+    // TODO: 从本地存储或服务器加载历史 Agent 消息
+    state.messages = [];
+    renderMessages();
 }
 
 function closeChat() {
@@ -624,6 +662,12 @@ async function loadMessages(contactId) {
 
 async function sendMessage(content) {
     if (!state.selectedContact || !content.trim()) return;
+    
+    // My Agent 聊天特殊处理
+    if (state.isAgentChat) {
+        await sendAgentMessage(content.trim());
+        return;
+    }
     
     try {
         const message = await apiRequest('/messages', {
@@ -649,6 +693,36 @@ async function sendMessage(content) {
         elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
     } catch (error) {
         console.error('发送消息失败:', error);
+    }
+}
+
+// 发送消息给 My Agent
+async function sendAgentMessage(content) {
+    try {
+        // 先显示用户消息
+        const userMessage = {
+            id: 'agent-msg-' + Date.now(),
+            content: content,
+            is_from_owner: true,
+            created_at: new Date().toISOString()
+        };
+        state.messages.push(userMessage);
+        renderMessages();
+        elements.messageInput.value = '';
+        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        
+        // 通过 WebSocket 发送给 Agent
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+            state.ws.send(JSON.stringify({
+                type: 'agent_message',
+                content: content,
+                timestamp: new Date().toISOString()
+            }));
+        } else {
+            showToast('WebSocket 未连接，无法发送给 Agent');
+        }
+    } catch (error) {
+        console.error('发送 Agent 消息失败:', error);
     }
 }
 
@@ -741,6 +815,23 @@ function handleWebSocketMessage(message) {
             updateTotalUnreadCount();
             // 显示通知
             showToast(`收到新消息`);
+        }
+    } else if (message.type === 'agent_reply') {
+        // 收到 Agent 回复
+        const agentMessage = {
+            id: 'agent-reply-' + Date.now(),
+            content: message.content,
+            is_from_owner: false,
+            created_at: message.timestamp || new Date().toISOString()
+        };
+        
+        // 如果正在 My Agent 聊天窗口，直接显示
+        if (state.isAgentChat) {
+            state.messages.push(agentMessage);
+            renderMessages();
+        } else {
+            // 显示通知
+            showToast('Agent: ' + message.content.substring(0, 50) + '...');
         }
     }
 }
