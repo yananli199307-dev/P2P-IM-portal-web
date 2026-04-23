@@ -640,9 +640,33 @@ function openAgentChat() {
 }
 
 async function loadAgentMessages() {
-    // TODO: 从本地存储或服务器加载历史 Agent 消息
-    state.messages = [];
-    renderMessages();
+    // 从服务器加载 My Agent 历史消息（contact_id=0）
+    try {
+        // 使用内部 API，通过 user ID 验证用户身份
+        let userId = '1';
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                userId = user.id || '1';
+            }
+        } catch (e) {
+            console.error('解析用户信息失败:', e);
+        }
+        const response = await fetch(`${API_BASE_URL.replace('/api', '')}/api/internal/messages?contact_id=0&token=${userId}`);
+        if (response.ok) {
+            const messages = await response.json();
+            state.messages = messages;
+        } else {
+            console.error('加载 Agent 消息失败:', response.status);
+            state.messages = [];
+        }
+        renderMessages();
+    } catch (error) {
+        console.error('加载 Agent 消息失败:', error);
+        state.messages = [];
+        renderMessages();
+    }
 }
 
 function closeChat() {
