@@ -1306,7 +1306,7 @@ async function loadGroupMessages(group) {
         // 群主用数字 dbId，成员用 UUID
         const endpoint = group.is_owner && group.dbId
             ? `/messages/group/${group.dbId}`
-            : `/messages/group/by-uuid/${group.id}`;
+            : `/messages/group/uuid/${group.id}`;
         
         // 显示加载状态
         const container = document.getElementById('group-chat-messages');
