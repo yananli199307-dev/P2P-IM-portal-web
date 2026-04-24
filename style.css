@@ -355,7 +355,7 @@ input:focus {
     position: fixed;
     top: 0;
     right: 0;
-    width: 800px;
+    width: 400px;
     height: 100vh;
     background: var(--white);
     border-left: 1px solid var(--border);
@@ -970,4 +970,70 @@ input:checked + .slider:before {
     width: 18px;
     height: 18px;
     cursor: pointer;
+}
+
+/* 文件消息样式 */
+.file-message {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px;
+    margin: 4px 0;
+}
+
+.file-message .file-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.file-message .file-icon {
+    font-size: 24px;
+}
+
+.file-message .file-info {
+    flex: 1;
+}
+
+.file-message .file-name {
+    font-weight: 500;
+    word-break: break-all;
+}
+
+.file-message .file-size {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 2px;
+}
+
+.image-message {
+    margin: 4px 0;
+}
+
+.image-message img {
+    display: block;
+    max-width: 100%;
+    border-radius: 8px;
+}
+
+.uploading {
+    opacity: 0.7;
+    font-style: italic;
+}
+
+/* 文件上传按钮 */
+#file-btn {
+    padding: 8px;
+    margin-right: 8px;
+}
+
+#file-btn:hover {
+    background: var(--bg);
+}
+
+/* 隐藏文件输入 */
+#file-input {
+    display: none;
 }

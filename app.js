@@ -86,6 +86,8 @@ const elements = {
     chatMessages: document.getElementById('chat-messages'),
     messageInput: document.getElementById('message-input'),
     sendBtn: document.getElementById('send-btn'),
+    fileInput: document.getElementById('file-input'),
+    fileBtn: document.getElementById('file-btn'),
     
     // 修改密码弹窗
     changePasswordModal: document.getElementById('change-password-modal'),
@@ -640,33 +642,9 @@ function openAgentChat() {
 }
 
 async function loadAgentMessages() {
-    // 从服务器加载 My Agent 历史消息（contact_id=0）
-    try {
-        // 使用内部 API，通过 user ID 验证用户身份
-        let userId = '1';
-        try {
-            const userStr = localStorage.getItem('user');
-            if (userStr) {
-                const user = JSON.parse(userStr);
-                userId = user.id || '1';
-            }
-        } catch (e) {
-            console.error('解析用户信息失败:', e);
-        }
-        const response = await fetch(`${API_BASE_URL.replace('/api', '')}/api/internal/messages?contact_id=0&token=${userId}`);
-        if (response.ok) {
-            const messages = await response.json();
-            state.messages = messages;
-        } else {
-            console.error('加载 Agent 消息失败:', response.status);
-            state.messages = [];
-        }
-        renderMessages();
-    } catch (error) {
-        console.error('加载 Agent 消息失败:', error);
-        state.messages = [];
-        renderMessages();
-    }
+    // TODO: 从本地存储或服务器加载历史 Agent 消息
+    state.messages = [];
+    renderMessages();
 }
 
 function closeChat() {
@@ -750,6 +728,129 @@ async function sendAgentMessage(content) {
     }
 }
 
+// 上传并发送文件
+async function uploadAndSendFile(file) {
+    if (!state.selectedContact) {
+        showToast('请先选择联系人');
+        return;
+    }
+
+    // 显示上传中
+    const uploadMessage = {
+        id: 'upload-' + Date.now(),
+        content: `📎 正在上传: ${file.name}...`,
+        is_from_owner: true,
+        created_at: new Date().toISOString(),
+        is_uploading: true
+    };
+    state.messages.push(uploadMessage);
+    renderMessages();
+
+    try {
+        // 创建 FormData
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // 上传文件
+        const response = await fetch(`${API_BASE_URL}/files/upload`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${state.token}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('上传失败');
+        }
+
+        const fileData = await response.json();
+
+        // 移除上传中消息
+        state.messages = state.messages.filter(m => m.id !== uploadMessage.id);
+
+        // 发送文件消息
+        if (state.isAgentChat) {
+            // My Agent 聊天
+            await sendAgentFileMessage(fileData);
+        } else {
+            // 普通联系人聊天
+            await sendFileMessage(fileData);
+        }
+
+    } catch (error) {
+        console.error('上传文件失败:', error);
+        // 移除上传中消息，显示错误
+        state.messages = state.messages.filter(m => m.id !== uploadMessage.id);
+        showToast('上传文件失败: ' + error.message);
+        renderMessages();
+    }
+}
+
+// 发送文件消息给普通联系人
+async function sendFileMessage(fileData) {
+    try {
+        const message = await apiRequest('/messages', {
+            method: 'POST',
+            body: {
+                contact_id: state.selectedContact.id,
+                content: `📎 ${fileData.file_name}`,
+                message_type: fileData.file_type === 'image' ? 'image' : 'file',
+                file_url: fileData.file_url,
+                file_name: fileData.file_name,
+                file_size: fileData.file_size
+            }
+        });
+
+        state.recentSentMessageIds = state.recentSentMessageIds || new Set();
+        state.recentSentMessageIds.add(message.id);
+        setTimeout(() => {
+            state.recentSentMessageIds?.delete(message.id);
+        }, 5000);
+
+        state.messages.push(message);
+        renderMessages();
+        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+    } catch (error) {
+        console.error('发送文件消息失败:', error);
+        showToast('发送失败: ' + error.message);
+    }
+}
+
+// 发送文件消息给 My Agent
+async function sendAgentFileMessage(fileData) {
+    try {
+        // 先显示用户消息
+        const userMessage = {
+            id: 'agent-file-' + Date.now(),
+            content: `📎 ${fileData.file_name}`,
+            is_from_owner: true,
+            created_at: new Date().toISOString(),
+            file_url: fileData.file_url,
+            file_name: fileData.file_name,
+            file_size: fileData.file_size
+        };
+        state.messages.push(userMessage);
+        renderMessages();
+        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+
+        // 通过 WebSocket 发送给 Agent
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+            state.ws.send(JSON.stringify({
+                type: 'agent_message',
+                content: `📎 文件: ${fileData.file_name}\n链接: ${fileData.file_url}`,
+                timestamp: new Date().toISOString(),
+                file_url: fileData.file_url,
+                file_name: fileData.file_name
+            }));
+        } else {
+            showToast('WebSocket 未连接，无法发送给 Agent');
+        }
+    } catch (error) {
+        console.error('发送 Agent 文件消息失败:', error);
+    }
+}
+
 function renderMessages() {
     if (state.messages.length === 0) {
         elements.chatMessages.innerHTML = '<div class="empty">暂无消息</div>';
@@ -768,10 +869,42 @@ function renderMessages() {
             hour: '2-digit',
             minute: '2-digit'
         });
-        
+
+        // 处理文件消息
+        let contentHtml = '';
+        if (msg.is_uploading) {
+            contentHtml = `<div class="uploading">${escapeHtml(msg.content)}</div>`;
+        } else if (msg.message_type === 'image' && msg.file_url) {
+            // 图片消息
+            contentHtml = `
+                <div class="image-message">
+                    <img src="${msg.file_url}" alt="${escapeHtml(msg.file_name || '图片')}" 
+                         style="max-width: 200px; max-height: 200px; border-radius: 8px; cursor: pointer;"
+                         onclick="window.open('${msg.file_url}', '_blank')">
+                </div>
+            `;
+        } else if (msg.file_url) {
+            // 文件消息
+            const fileSize = formatFileSize(msg.file_size);
+            contentHtml = `
+                <div class="file-message">
+                    <a href="${msg.file_url}" target="_blank" class="file-link" style="color: inherit; text-decoration: none;">
+                        <div class="file-icon">📎</div>
+                        <div class="file-info">
+                            <div class="file-name">${escapeHtml(msg.file_name || '文件')}</div>
+                            <div class="file-size">${fileSize}</div>
+                        </div>
+                    </a>
+                </div>
+            `;
+        } else {
+            // 普通文本消息
+            contentHtml = `<div>${escapeHtml(msg.content)}</div>`;
+        }
+
         return `
             <div class="message ${isSent ? 'sent' : 'received'}">
-                <div>${escapeHtml(msg.content)}</div>
+                ${contentHtml}
                 <div class="message-time">${time}</div>
             </div>
         `;
@@ -973,6 +1106,15 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// 格式化文件大小
+function formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 // 暴露给 HTML 调用的函数
 window.approveRequest = approveRequest;
 window.rejectRequest = rejectRequest;
@@ -1100,10 +1242,24 @@ function bindEvents() {
     elements.sendBtn.addEventListener('click', () => {
         sendMessage(elements.messageInput.value);
     });
-    
+
     elements.messageInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             sendMessage(elements.messageInput.value);
+        }
+    });
+
+    // 文件上传
+    elements.fileBtn?.addEventListener('click', () => {
+        elements.fileInput?.click();
+    });
+
+    elements.fileInput?.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            await uploadAndSendFile(file);
+            // 清空 input，允许重复选择同一文件
+            e.target.value = '';
         }
     });
     
