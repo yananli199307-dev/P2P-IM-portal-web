@@ -875,8 +875,10 @@ function renderMessages() {
         if (msg.is_uploading) {
             contentHtml = `<div class="uploading">${escapeHtml(msg.content)}</div>`;
         } else if (msg.message_type === 'image' && msg.file_url) {
-            // 图片消息 - 使用公开下载链接
-            const publicUrl = msg.file_url.replace('/uploads/', '/api/files/public/');
+            // 图片消息 - file_url 已经是完整 URL，只需替换路径
+            const publicUrl = msg.file_url.includes('/uploads/') 
+                ? msg.file_url.replace('/uploads/', '/api/files/public/')
+                : msg.file_url;
             contentHtml = `
                 <div class="image-message">
                     <img src="${publicUrl}" alt="${escapeHtml(msg.file_name || '图片')}" 
@@ -885,10 +887,11 @@ function renderMessages() {
                 </div>
             `;
         } else if (msg.file_url) {
-            // 文件消息 - 使用公开下载链接
+            // 文件消息 - file_url 已经是完整 URL，只需替换路径
             const fileSize = formatFileSize(msg.file_size);
-            // 将 /uploads/ 路径改为 /api/files/public/ 以便公开访问
-            const publicUrl = msg.file_url.replace('/uploads/', '/api/files/public/');
+            const publicUrl = msg.file_url.includes('/uploads/')
+                ? msg.file_url.replace('/uploads/', '/api/files/public/')
+                : msg.file_url;
             contentHtml = `
                 <div class="file-message">
                     <a href="${publicUrl}" target="_blank" class="file-link" style="color: inherit; text-decoration: none;">
