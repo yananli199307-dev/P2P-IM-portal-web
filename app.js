@@ -875,20 +875,23 @@ function renderMessages() {
         if (msg.is_uploading) {
             contentHtml = `<div class="uploading">${escapeHtml(msg.content)}</div>`;
         } else if (msg.message_type === 'image' && msg.file_url) {
-            // 图片消息
+            // 图片消息 - 使用公开下载链接
+            const publicUrl = msg.file_url.replace('/uploads/', '/api/files/public/');
             contentHtml = `
                 <div class="image-message">
-                    <img src="${msg.file_url}" alt="${escapeHtml(msg.file_name || '图片')}" 
+                    <img src="${publicUrl}" alt="${escapeHtml(msg.file_name || '图片')}" 
                          style="max-width: 200px; max-height: 200px; border-radius: 8px; cursor: pointer;"
-                         onclick="window.open('${msg.file_url}', '_blank')">
+                         onclick="window.open('${publicUrl}', '_blank')">
                 </div>
             `;
         } else if (msg.file_url) {
-            // 文件消息
+            // 文件消息 - 使用公开下载链接
             const fileSize = formatFileSize(msg.file_size);
+            // 将 /uploads/ 路径改为 /api/files/public/ 以便公开访问
+            const publicUrl = msg.file_url.replace('/uploads/', '/api/files/public/');
             contentHtml = `
                 <div class="file-message">
-                    <a href="${msg.file_url}" target="_blank" class="file-link" style="color: inherit; text-decoration: none;">
+                    <a href="${publicUrl}" target="_blank" class="file-link" style="color: inherit; text-decoration: none;">
                         <div class="file-icon">📎</div>
                         <div class="file-info">
                             <div class="file-name">${escapeHtml(msg.file_name || '文件')}</div>
