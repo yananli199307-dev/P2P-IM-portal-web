@@ -1037,3 +1037,121 @@ input:checked + .slider:before {
 #file-input {
     display: none;
 }
+
+/* ============== 通话 UI ============== */
+.call-overlay {
+    position: fixed;
+    inset: 0;
+    background: #1c1c1e;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+.call-overlay.hidden { display: none; }
+
+.call-incoming-box {
+    text-align: center;
+    padding: 40px;
+}
+.call-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    margin: 0 auto 20px;
+    color: white;
+}
+.call-peer-name {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.call-status { font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: 32px; }
+.call-duration { font-size: 18px; color: rgba(255,255,255,0.85); margin-top: 8px; font-variant-numeric: tabular-nums; }
+
+.call-actions {
+    display: flex;
+    gap: 60px;
+    justify-content: center;
+    margin-top: 40px;
+}
+.call-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+}
+.call-btn:hover { transform: scale(1.08); }
+.call-btn-accept { background: #34c759; }
+.call-btn-reject { background: #ff3b30; transform: rotate(135deg); }
+.call-btn-reject:hover { transform: rotate(135deg) scale(1.08); }
+.call-btn-secondary { background: rgba(255,255,255,0.18); }
+.call-btn-secondary.active { background: rgba(255,255,255,0.4); }
+
+/* 通话中视频 */
+.call-remote-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+}
+.call-local-video {
+    position: absolute;
+    top: 24px;
+    right: 16px;
+    width: 110px;
+    height: 150px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: #2a2a2a;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    z-index: 2;
+}
+.call-info {
+    position: absolute;
+    top: 32px;
+    left: 24px;
+    z-index: 2;
+    background: rgba(0,0,0,0.45);
+    padding: 12px 18px;
+    border-radius: 12px;
+}
+.call-controls {
+    position: absolute;
+    bottom: 60px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    z-index: 2;
+}
+
+/* 仅语音通话隐藏视频流(纯黑背景 + 头像中央) */
+.call-overlay.audio-only .call-remote-video,
+.call-overlay.audio-only .call-local-video { display: none; }
+.call-overlay.audio-only .call-info { position: static; background: transparent; text-align: center; padding-top: 80px; }
+.call-overlay.audio-only .call-info::before {
+    content: '';
+    display: block;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    margin: 0 auto 20px;
+}
+

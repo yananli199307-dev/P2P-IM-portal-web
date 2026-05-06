@@ -252,6 +252,16 @@
                     <div class="chat-title">
                         <h3 id="chat-contact-name">联系人</h3>
                     </div>
+                    <button id="call-voice-btn" class="btn-icon" title="语音通话" style="margin-left:auto">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 15.5c-1.25 0-2.45-.2-3.57-.57-.35-.11-.74-.03-1.02.24l-2.2 2.2c-2.83-1.44-5.15-3.75-6.59-6.58l2.2-2.21c.28-.27.36-.66.25-1.01C8.7 6.45 8.5 5.25 8.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.5c0-.55-.45-1-1-1zM19 12h2c0-4.97-4.03-9-9-9v2c3.87 0 7 3.13 7 7zm-4 0h2c0-2.76-2.24-5-5-5v2c1.66 0 3 1.34 3 3z"/>
+                        </svg>
+                    </button>
+                    <button id="call-video-btn" class="btn-icon" title="视频通话">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                        </svg>
+                    </button>
                 </div>
                 <div id="chat-messages" class="chat-messages">
                     <!-- 消息将在这里渲染 -->
@@ -402,6 +412,45 @@
 
     <!-- Toast 提示 -->
     <div id="toast" class="toast hidden"></div>
+
+    <!-- 来电弹窗 -->
+    <div id="incoming-call" class="call-overlay hidden">
+        <div class="call-incoming-box">
+            <div class="call-avatar"><span id="incoming-name-initial">?</span></div>
+            <div class="call-peer-name" id="incoming-name">对方</div>
+            <div class="call-status" id="incoming-status">视频通话邀请</div>
+            <div class="call-actions">
+                <button id="reject-call-btn" class="call-btn call-btn-reject">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.1-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
+                </button>
+                <button id="accept-call-btn" class="call-btn call-btn-accept">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M20 15.5c-1.25 0-2.45-.2-3.57-.57-.35-.11-.74-.03-1.02.24l-2.2 2.2c-2.83-1.44-5.15-3.75-6.59-6.58l2.2-2.21c.28-.27.36-.66.25-1.01C8.7 6.45 8.5 5.25 8.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.5c0-.55-.45-1-1-1z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通话中全屏界面 -->
+    <div id="call-screen" class="call-overlay hidden">
+        <video id="remote-video" autoplay playsinline class="call-remote-video"></video>
+        <video id="local-video" autoplay playsinline muted class="call-local-video"></video>
+        <div class="call-info">
+            <div class="call-peer-name" id="call-peer-name">通话中</div>
+            <div class="call-status" id="call-status">连接中...</div>
+            <div class="call-duration" id="call-duration"></div>
+        </div>
+        <div class="call-controls">
+            <button id="toggle-mic-btn" class="call-btn call-btn-secondary" title="静音">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+            </button>
+            <button id="hangup-btn" class="call-btn call-btn-reject" title="挂断">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.1-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
+            </button>
+            <button id="toggle-cam-btn" class="call-btn call-btn-secondary" title="切换摄像头">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M9.4 10.5l4.77-8.26C13.47 2.09 12.75 2 12 2c-2.4 0-4.6.85-6.32 2.25l3.66 6.35.06-.1zM21.54 9c-.92-2.92-3.15-5.26-6-6.34L11.88 9h9.66zm.26 1h-7.49l.29.5 4.76 8.25C21 16.97 22 14.61 22 12c0-.69-.07-1.35-.2-2zM8.54 12l-3.9-6.75C3.01 7.03 2 9.39 2 12c0 .69.07 1.35.2 2h7.49l-1.15-2zm-6.08 3c.92 2.92 3.15 5.26 6 6.34L12.12 15H2.46zm11.27 0l-3.9 6.76c.7.15 1.42.24 2.17.24 2.4 0 4.6-.85 6.32-2.25l-3.66-6.35-.93 1.6z"/></svg>
+            </button>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
