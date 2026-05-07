@@ -22,7 +22,34 @@ const state = {
     selectedContact: null,
     ws: null,
     isConnected: false,
-    isInitialized: false
+    isInitialized: false,
+    // 通话状态
+    call: {
+        pc: null,
+        localStream: null,
+        remoteStream: null,
+        peerContactId: null,   // 对端 contact.id
+        peerName: '',
+        isCaller: false,
+        isVideo: false,
+        startedAt: null,
+        durationTimer: null,
+        pendingIce: [],         // setRemoteDescription 之前缓存的 ICE
+    }
+};
+
+// WebRTC ICE config(STUN + 我们自建 TURN)
+const ICE_CONFIG = {
+    iceServers: [
+        // 项目自有 STUN(国内可达)— 列在 Google STUN 之前,确保移动网络也能拿到 srflx
+        { urls: 'stun:185.115.207.219:3478' },
+        { urls: 'stun:stun.l.google.com:19302' },
+        {
+            urls: 'turn:185.115.207.219:3478',
+            username: 'agentp2p',
+            credential: '95046a276a4c4f7fd604f9d3'
+        }
+    ]
 };
 
 // DOM 元素
@@ -111,6 +138,15 @@ const elements = {
 
 // ========== API 请求 ==========
 
+function normalizePortalUrl(url) {
+    let cleaned = (url || '').replace(/\s+/g, '');
+    if (!cleaned) return cleaned;
+    if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+        cleaned = `https://${cleaned}`;
+    }
+    return cleaned.replace(/\/+$/, '');
+}
+
 async function apiRequest(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
     const method = options.method || 'GET';
@@ -193,15 +229,16 @@ async function initAccount(password, displayName) {
 // ========== 认证 ==========
 
 async function login(portalUrl, password) {
+    const normalizedPortalUrl = normalizePortalUrl(portalUrl);
     const data = await apiRequest('/auth/login', {
         method: 'POST',
-        body: { portal_url: portalUrl, password }
+        body: { portal_url: normalizedPortalUrl, password }
     });
     
     state.token = data.access_token;
-    state.portalUrl = portalUrl;
+    state.portalUrl = normalizedPortalUrl;
     localStorage.setItem('token', state.token);
-    localStorage.setItem('portalUrl', portalUrl);
+    localStorage.setItem('portalUrl', normalizedPortalUrl);
     
     const user = await apiRequest('/auth/me');
     state.user = user;
@@ -253,14 +290,16 @@ function showApplyPage(targetPortal) {
 }
 
 async function applyContact(targetPortal, requesterName, requesterPortal, message) {
+    const normalizedTargetPortal = normalizePortalUrl(targetPortal);
+    const normalizedRequesterPortal = normalizePortalUrl(requesterPortal);
     // 申请方生成 shared_key
     const sharedKey = generateSharedKey();
     
     // 保存到本地存储（用于后续验证回调）
     const pendingRequests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
     pendingRequests.push({
-        target_portal: targetPortal,
-        requester_portal: requesterPortal,
+        target_portal: normalizedTargetPortal,
+        requester_portal: normalizedRequesterPortal,
         shared_key: sharedKey,
         created_at: new Date().toISOString()
     });
@@ -269,9 +308,9 @@ async function applyContact(targetPortal, requesterName, requesterPortal, messag
     await apiRequest('/contact-requests/apply', {
         method: 'POST',
         body: {
-            target_portal: targetPortal,
+            target_portal: normalizedTargetPortal,
             requester_name: requesterName,
-            requester_portal: requesterPortal,
+            requester_portal: normalizedRequesterPortal,
             shared_key: sharedKey,  // 申请方提供 shared_key
             message: message
         }
@@ -408,7 +447,7 @@ function updateRequestBadge() {
 
 // 添加联系人
 async function addContactByUrl() {
-    const url = elements.addContactUrl.value.trim();
+    const url = normalizePortalUrl(elements.addContactUrl.value);
     
     if (!url) {
         elements.addContactMessage.textContent = '请输入 Portal 地址';
@@ -1011,7 +1050,7 @@ function handleWebSocketMessage(message) {
             is_from_owner: false,
             created_at: message.timestamp || new Date().toISOString()
         };
-        
+
         // 如果正在 My Agent 聊天窗口，直接显示
         if (state.isAgentChat) {
             state.messages.push(agentMessage);
@@ -1020,6 +1059,14 @@ function handleWebSocketMessage(message) {
             // 显示通知
             showToast('Agent: ' + message.content.substring(0, 50) + '...');
         }
+    } else if (
+        message.type === 'call_invite' ||
+        message.type === 'call_accept' ||
+        message.type === 'call_reject' ||
+        message.type === 'call_hangup' ||
+        message.type === 'call_ice'
+    ) {
+        handleCallSignal(message);
     }
 }
 
@@ -1811,5 +1858,293 @@ async function init() {
     }
 }
 
+// ========== WebRTC 1v1 通话 ==========
+
+function $(id) { return document.getElementById(id); }
+
+function sendCallSignal(type, peerContactId, payload) {
+    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
+        showToast('未连接,无法发起通话');
+        return;
+    }
+    state.ws.send(JSON.stringify({
+        type,
+        data: { target_user_id: peerContactId, data: payload || {} }
+    }));
+}
+
+function buildPeerConnection() {
+    const pc = new RTCPeerConnection(ICE_CONFIG);
+    pc.onicecandidate = (e) => {
+        if (e.candidate && state.call.peerContactId) {
+            sendCallSignal('call_ice', state.call.peerContactId, {
+                candidate: e.candidate.candidate,
+                sdpMid: e.candidate.sdpMid,
+                sdpMLineIndex: e.candidate.sdpMLineIndex
+            });
+        }
+    };
+    pc.ontrack = (e) => {
+        const remote = e.streams && e.streams[0] ? e.streams[0] : new MediaStream([e.track]);
+        state.call.remoteStream = remote;
+        const video = $('remote-video');
+        if (video) video.srcObject = remote;
+    };
+    pc.onconnectionstatechange = () => {
+        const s = pc.connectionState;
+        const status = $('call-status');
+        if (status) {
+            status.textContent = ({ connecting: '连接中…', connected: '已连接', disconnected: '断线…', failed: '连接失败', closed: '已结束' })[s] || s;
+        }
+        if (s === 'connected' && !state.call.startedAt) {
+            state.call.startedAt = Date.now();
+            state.call.durationTimer = setInterval(updateCallDuration, 1000);
+        }
+        if (s === 'failed' || s === 'closed' || s === 'disconnected') {
+            // 不立刻挂,disconnected 可能恢复
+        }
+    };
+    return pc;
+}
+
+function updateCallDuration() {
+    const el = $('call-duration');
+    if (!el || !state.call.startedAt) return;
+    const sec = Math.floor((Date.now() - state.call.startedAt) / 1000);
+    const m = String(Math.floor(sec / 60)).padStart(2, '0');
+    const s = String(sec % 60).padStart(2, '0');
+    el.textContent = `${m}:${s}`;
+}
+
+async function startOutgoingCall(isVideo) {
+    if (!state.selectedContact || state.selectedContact.id === 'agent') {
+        showToast('请先选择一个联系人');
+        return;
+    }
+    try {
+        state.call.isCaller = true;
+        state.call.isVideo = isVideo;
+        state.call.peerContactId = state.selectedContact.id;
+        state.call.peerName = state.selectedContact.display_name || '对方';
+        state.call.pendingIce = [];
+
+        showCallScreen('呼叫中…');
+        state.call.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
+        $('local-video').srcObject = state.call.localStream;
+
+        state.call.pc = buildPeerConnection();
+        state.call.localStream.getTracks().forEach(t => state.call.pc.addTrack(t, state.call.localStream));
+
+        const offer = await state.call.pc.createOffer();
+        await state.call.pc.setLocalDescription(offer);
+        sendCallSignal('call_invite', state.call.peerContactId, { sdp: offer.sdp, type: isVideo ? 'video' : 'voice' });
+    } catch (e) {
+        console.error('startOutgoingCall failed', e);
+        showToast('发起通话失败: ' + e.message);
+        cleanupCall();
+    }
+}
+
+async function handleCallSignal(message) {
+    const t = message.type;
+    const data = message.data || {};
+    const fromUserId = message.from_user_id;
+    const fromContactId = message.from_contact_id;
+    if (t === 'call_invite') {
+        // 后端转发时已带 from_contact_id(对端在我这边的 contact.id);兜底再按 portal 反查
+        let contact = fromContactId ? state.contacts.find(c => c.id === fromContactId) : null;
+        if (!contact) {
+            contact = state.contacts.find(c => c.portal_url && c.portal_url !== state.portalUrl);
+        }
+        const peerName = contact ? contact.display_name : '对方';
+        const peerId = contact ? contact.id : fromContactId || null;
+        showIncomingCall({
+            sdp: data.sdp,
+            isVideo: data.type === 'video',
+            peerName,
+            peerContactId: peerId,
+            fromUserId
+        });
+    } else if (t === 'call_accept') {
+        if (state.call.pc && data.sdp) {
+            try {
+                await state.call.pc.setRemoteDescription({ type: 'answer', sdp: data.sdp });
+                // flush 缓存的 ice
+                while (state.call.pendingIce.length) {
+                    try { await state.call.pc.addIceCandidate(state.call.pendingIce.shift()); } catch (e) {}
+                }
+            } catch (e) { console.error('apply answer fail', e); }
+        }
+    } else if (t === 'call_ice') {
+        if (!data.candidate) return;
+        const cand = new RTCIceCandidate({
+            candidate: data.candidate,
+            sdpMid: data.sdpMid,
+            sdpMLineIndex: data.sdpMLineIndex
+        });
+        if (state.call.pc && state.call.pc.remoteDescription) {
+            try { await state.call.pc.addIceCandidate(cand); } catch (e) {}
+        } else {
+            state.call.pendingIce.push(cand);
+        }
+    } else if (t === 'call_reject' || t === 'call_hangup') {
+        showToast(t === 'call_reject' ? '对方已拒接' : '通话已结束');
+        recordCallEnd(t === 'call_reject' ? 'rejected' : 'remote_hangup');
+        cleanupCall();
+    }
+}
+
+// 通话结束时记录到聊天(只让主叫方写,对方通过 WebSocket new_message 收到)
+async function recordCallEnd(reason) {
+    // 提前把变量提取到局部 — cleanupCall 之后 state.call 会被清
+    const peerId = state.call.peerContactId;
+    const isCaller = state.call.isCaller;
+    const isVideo = state.call.isVideo;
+    const startedAt = state.call.startedAt;
+    if (!peerId || !isCaller) return;  // 主叫记录,被叫不重复
+
+    const kind = isVideo ? '视频通话' : '语音通话';
+    let content;
+    if (startedAt) {
+        const sec = Math.floor((Date.now() - startedAt) / 1000);
+        const m = String(Math.floor(sec / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        content = `📞 ${kind} 时长 ${m}:${s}`;
+    } else if (reason === 'rejected') {
+        content = `📞 ${kind} 对方已拒接`;
+    } else {
+        content = `📞 ${kind} 未接通`;
+    }
+    try {
+        const msg = await apiRequest('/messages', {
+            method: 'POST',
+            body: { contact_id: peerId, content, message_type: 'text' },
+        });
+        state.recentSentMessageIds = state.recentSentMessageIds || new Set();
+        state.recentSentMessageIds.add(msg.id);
+        setTimeout(() => state.recentSentMessageIds?.delete(msg.id), 5000);
+        if (state.selectedContact?.id === peerId) {
+            state.messages.push(msg);
+            renderMessages();
+        }
+    } catch (e) {
+        console.error('记录通话失败', e);
+    }
+}
+
+function showIncomingCall({ sdp, isVideo, peerName, peerContactId, fromUserId }) {
+    state.call.pendingOffer = sdp;
+    state.call.isVideo = isVideo;
+    state.call.isCaller = false;
+    state.call.peerName = peerName;
+    state.call.peerContactId = peerContactId;
+    // 注意:不要重置 pendingIce —— 跨 Portal HTTP 转发不保序,
+    // ICE 可能比 invite 先到,提前缓冲的候选必须保留。
+    if (!Array.isArray(state.call.pendingIce)) state.call.pendingIce = [];
+
+    $('incoming-name-initial').textContent = (peerName[0] || '?').toUpperCase();
+    $('incoming-name').textContent = peerName;
+    $('incoming-status').textContent = (isVideo ? '视频' : '语音') + '通话邀请';
+    $('incoming-call').classList.remove('hidden');
+}
+
+async function acceptIncomingCall() {
+    const sdp = state.call.pendingOffer;
+    if (!sdp) return;
+    $('incoming-call').classList.add('hidden');
+    try {
+        showCallScreen('接通中…');
+        state.call.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: state.call.isVideo });
+        $('local-video').srcObject = state.call.localStream;
+
+        state.call.pc = buildPeerConnection();
+        state.call.localStream.getTracks().forEach(t => state.call.pc.addTrack(t, state.call.localStream));
+
+        await state.call.pc.setRemoteDescription({ type: 'offer', sdp });
+        const answer = await state.call.pc.createAnswer();
+        await state.call.pc.setLocalDescription(answer);
+        sendCallSignal('call_accept', state.call.peerContactId, { sdp: answer.sdp });
+        // flush 缓存的 ice
+        while (state.call.pendingIce.length) {
+            try { await state.call.pc.addIceCandidate(state.call.pendingIce.shift()); } catch (e) {}
+        }
+    } catch (e) {
+        console.error('acceptIncomingCall failed', e);
+        showToast('接听失败: ' + e.message);
+        cleanupCall();
+    }
+}
+
+function rejectIncomingCall() {
+    sendCallSignal('call_reject', state.call.peerContactId, {});
+    $('incoming-call').classList.add('hidden');
+    cleanupCall();
+}
+
+function hangupCall() {
+    sendCallSignal('call_hangup', state.call.peerContactId, {});
+    recordCallEnd('local_hangup');
+    cleanupCall();
+}
+
+function showCallScreen(initialStatus) {
+    const overlay = $('call-screen');
+    overlay.classList.remove('hidden');
+    overlay.classList.toggle('audio-only', !state.call.isVideo);
+    $('call-peer-name').textContent = state.call.peerName || '通话';
+    $('call-status').textContent = initialStatus || '';
+    $('call-duration').textContent = '';
+}
+
+function cleanupCall() {
+    if (state.call.durationTimer) {
+        clearInterval(state.call.durationTimer);
+        state.call.durationTimer = null;
+    }
+    if (state.call.localStream) {
+        state.call.localStream.getTracks().forEach(t => t.stop());
+    }
+    if (state.call.pc) {
+        try { state.call.pc.close(); } catch (e) {}
+    }
+    state.call = {
+        pc: null, localStream: null, remoteStream: null,
+        peerContactId: null, peerName: '',
+        isCaller: false, isVideo: false,
+        startedAt: null, durationTimer: null, pendingIce: []
+    };
+    $('call-screen')?.classList.add('hidden');
+    $('incoming-call')?.classList.add('hidden');
+    const lv = $('local-video'); if (lv) lv.srcObject = null;
+    const rv = $('remote-video'); if (rv) rv.srcObject = null;
+}
+
+function toggleMic() {
+    if (!state.call.localStream) return;
+    let muted = false;
+    state.call.localStream.getAudioTracks().forEach(t => { t.enabled = !t.enabled; muted = !t.enabled; });
+    const btn = $('toggle-mic-btn');
+    if (btn) btn.classList.toggle('active', muted);
+}
+
+// 绑定通话相关按钮(在 DOMContentLoaded 后,init 里执行)
+function bindCallButtons() {
+    const cv = $('call-voice-btn');
+    if (cv) cv.onclick = () => startOutgoingCall(false);
+    const cvi = $('call-video-btn');
+    if (cvi) cvi.onclick = () => startOutgoingCall(true);
+    const acc = $('accept-call-btn');
+    if (acc) acc.onclick = acceptIncomingCall;
+    const rej = $('reject-call-btn');
+    if (rej) rej.onclick = rejectIncomingCall;
+    const hang = $('hangup-btn');
+    if (hang) hang.onclick = hangupCall;
+    const mic = $('toggle-mic-btn');
+    if (mic) mic.onclick = toggleMic;
+}
+
 // 启动
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+    bindCallButtons();
+});
